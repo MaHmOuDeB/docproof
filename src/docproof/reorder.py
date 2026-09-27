@@ -15,6 +15,7 @@ import re, sys, zipfile, collections
 from html import unescape
 
 from docproof.headings import ALL as HEADINGS  # noqa: E402
+from docproof.edit import ensure, write_docx  # noqa: E402
 
 def text(p): return "".join(unescape(t) for t in re.findall(r"<w:t(?:\s[^>]*)?>(.*?)</w:t>", p, re.S)).strip()
 
@@ -25,6 +26,8 @@ def body_paras(xml):
     return paras, sect
 
 def main(src, dst, mode, *a):
+    if mode == "sections" and a:
+        a = (a[0].upper(),) + a[1:]
     z = zipfile.ZipFile(src); xml = z.read("word/document.xml").decode()
     paras, sect = body_paras(xml)
     first = next(i for i, (s, e) in enumerate(paras) if text(xml[s:e]) in HEADINGS)
@@ -57,14 +60,11 @@ def main(src, dst, mode, *a):
         new_body = rest[:j] + [p] + rest[j:]
     else:
         sys.exit(__doc__)
-    assert collections.Counter(new_body) == collections.Counter(body), "paragraph multiset changed"
+    ensure(collections.Counter(new_body) == collections.Counter(body), "paragraph multiset changed")
     new_xml = xml[:region_start] + "".join(new_body) + xml[region_end:]
-    assert new_xml[:region_start] == xml[:region_start], "header changed"
-    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zo:
-        for it in z.infolist():
-            d = z.read(it.filename)
-            if it.filename == "word/document.xml": d = new_xml.encode()
-            zo.writestr(it, d)
+    ensure(new_xml[:region_start] == xml[:region_start], "header changed")
+    z.close()
+    write_docx(src, dst, new_xml)
     order_now = [text(p) for p in new_body if text(p) in HEADINGS]
     print("OK — content identical, order now:", " → ".join(order_now))
 

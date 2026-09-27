@@ -1,0 +1,127 @@
+"""docproof prompt — build a ready-to-paste prompt for ChatGPT, Gemini, Claude or any other LLM.
+
+  docproof prompt tailor --facts fact-base.md --ad job-ad.txt --doc base.docx [--out prompt.txt]
+  docproof prompt audit  --facts fact-base.md --doc tailored.docx
+  docproof prompt review --doc tailored.docx [--ad job-ad.txt] [--persona "hiring manager"]
+
+The prompt bundles the fact base, the job ad, the `match` report and the document text with the
+house rules, and asks the model for a machine-readable answer. For `tailor`, save the model's JSON
+reply and apply it safely with:
+
+  docproof apply base.docx reply.json tailored.docx --facts fact-base.md
+
+which runs the edits, bolds the keywords and verifies every figure against the fact base.
+The model proposes; the tools check.
+"""
+import io
+import json
+import sys
+from contextlib import redirect_stdout
+from pathlib import Path
+
+from docproof.facts import docx_paragraphs
+
+HERE = Path(__file__).resolve().parent
+
+
+def doc_lines(docx):
+    """Header paragraphs + body paragraphs, one per line, as the model should reference them."""
+    import html
+    import re
+    import zipfile
+    with zipfile.ZipFile(docx) as z:
+        x = z.read("word/document.xml").decode("utf-8")
+    head = x[:x.find("</w:tbl>")] if "</w:tbl>" in x else ""
+    hl = [html.unescape("".join(re.findall(r"<w:t(?:\s[^>]*)?>([^<]*)</w:t>", p))).strip()
+          for p in re.findall(r"<w:p[ >].*?</w:p>", head, re.S)]
+    return "\n".join([l for l in hl if l] + docx_paragraphs(docx))
+
+
+def _capture(fn, *args):
+    buf = io.StringIO()
+    try:
+        with redirect_stdout(buf):
+            fn(*args)
+    except SystemExit:
+        pass
+    return buf.getvalue().strip()
+
+
+def build_prompt(kind, opt):
+    tpl = (HERE / "prompts" / f"{kind}.md").read_text(encoding="utf-8")
+    if kind == "tailor":
+        from docproof.match import main as match_main
+        return tpl.format(facts=Path(opt["--facts"]).read_text(encoding="utf-8"),
+                          ad=Path(opt["--ad"]).read_text(encoding="utf-8"),
+                          match=_capture(match_main, [opt["--ad"], "--facts", opt["--facts"]]),
+                          doc=doc_lines(opt["--doc"]))
+    if kind == "audit":
+        from docproof.verify import main as verify_main
+        return tpl.format(facts=Path(opt["--facts"]).read_text(encoding="utf-8"), doc=doc_lines(opt["--doc"]),
+                          verify=_capture(verify_main, [opt["--doc"], "--facts", opt["--facts"]]))
+    if kind == "review":
+        ad = opt.get("--ad")
+        return tpl.format(persona=opt.get("--persona", "senior tech recruiter"), doc=doc_lines(opt["--doc"]),
+                          ad_clause=", for the job ad below" if ad else "",
+                          ad_block=f"\n=== JOB AD ===\n{Path(ad).read_text(encoding='utf-8')}\n" if ad else "")
+    raise KeyError(kind)
+
+
+NEEDS = {"tailor": ("--facts", "--ad", "--doc"), "audit": ("--facts", "--doc"), "review": ("--doc",)}
+
+
+def main(argv=None):
+    a = list(sys.argv[1:] if argv is None else argv)
+    if not a or a[0] not in NEEDS:
+        sys.exit(__doc__)
+    kind, rest = a[0], a[1:]
+    opt = {rest[i]: rest[i + 1] for i in range(0, len(rest) - 1) if rest[i].startswith("--")}
+    missing = [k for k in NEEDS[kind] if k not in opt]
+    if missing:
+        sys.exit(f"docproof prompt {kind}: missing {', '.join(missing)}\n\n{__doc__}")
+    text = build_prompt(kind, opt)
+    if "--out" in opt:
+        Path(opt["--out"]).write_text(text, encoding="utf-8")
+        print(f"Wrote {opt['--out']} ({len(text):,} characters) — paste it into your assistant.")
+    else:
+        print(text)
+
+
+def apply_main(argv=None):
+    """docproof apply <in.docx> <reply.json> <out.docx> [--facts fact-base.md]"""
+    a = list(sys.argv[1:] if argv is None else argv)
+    if len(a) < 3 or not (a[0].endswith(".docx") and a[1].endswith(".json") and a[2].endswith(".docx")):
+        sys.exit("usage: docproof apply <in.docx> <reply.json> <out.docx> [--facts fact-base.md]\n\n"
+                 "Applies an LLM's tailoring reply (from `docproof prompt tailor`): edits, then keyword bold,\n"
+                 "then — with --facts — verifies every figure against the fact base.")
+    src, reply_path, out = a[:3]
+    raw = Path(reply_path).read_text(encoding="utf-8").strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
+    reply = json.loads(raw)
+    import tempfile
+    from docproof import edit, keywords
+    with tempfile.TemporaryDirectory() as td:
+        ops_p, kw_p, mid = Path(td, "ops.json"), Path(td, "kw.json"), Path(td, "mid.docx")
+        ops_p.write_text(json.dumps(reply.get("ops", [])), encoding="utf-8")
+        sys.argv = ["docproof edit", "apply", src, str(ops_p), str(mid)]
+        edit.run()
+        kw = reply.get("keywords") or {}
+        done = False
+        if kw:
+            kw_p.write_text(json.dumps(kw), encoding="utf-8")
+            sys.argv = ["docproof keywords", str(mid), out, str(kw_p)]
+            try:
+                keywords.main()
+                done = True
+            except SystemExit as e:        # a stale bullet prefix shouldn't block the verification
+                print(f"WARN keywords skipped — {e.code}")
+        if not done:
+            Path(out).write_bytes(mid.read_bytes())
+            print(f"Wrote {out}")
+    for n in reply.get("notes", []):
+        print("note:", n)
+    if "--facts" in a:
+        from docproof.verify import main as verify_main
+        verify_main([out, "--facts", a[a.index("--facts") + 1]])
+    print(f"Next: docproof check {out} --orig {src} --png <dir>   (then look at the pages)")

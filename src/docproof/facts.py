@@ -8,7 +8,8 @@ W_T = re.compile(r"<w:t(?:\s[^>]*)?>([^<]*)</w:t>")
 STOP = set("""a an and are as at be by for from has have in into is it its of on or our the their this to
 we will with you your who what can able across per via within using use used etc e g i ie also
 plus more most other own new well strong good great excellent experience experienced years year
-nice similar including include such like least ideally proven solid hands on based both""".split())
+nice similar including include such like least ideally proven solid hands on based both clear non
+write results result success successful""".split())
 # light synonym folding so "experimentation" meets "a/b tests", "visualisation" meets "visualization"
 SYN = {"experimentation": "experiment", "experiments": "experiment", "experimental": "experiment",
        "ab": "experiment", "a/b": "experiment", "split": "experiment",

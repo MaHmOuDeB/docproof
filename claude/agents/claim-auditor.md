@@ -31,8 +31,10 @@ stake in it. You do not improve it, shorten it or make it more persuasive. You r
 docproof verify <document.docx> --facts <fact-base.md>
 ```
 
-Record every flag: untraced numbers, untraced tools, Known-gaps hits. Each one becomes a row. If
-the document isn't a .docx, do this step by hand: list every number and tool name and search the
+Record every flag: untraced numbers, Known-gaps hits, skills-row WARNs. Each one becomes a row.
+The script does NOT check tool names inside bullets — list every tool, platform and method named
+anywhere in the document and find each one in the fact base yourself. If the document isn't a
+.docx, do the whole step by hand: list every number and tool name and search the
 fact base for each.
 
 ## Step 2: the judgment calls the script can't make

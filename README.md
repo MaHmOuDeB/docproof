@@ -34,6 +34,7 @@ git clone https://github.com/MaHmOuDeB/docproof && cd docproof
 pip install -e .                 # installs the `docproof` command (no runtime dependencies)
 docproof doctor                  # checks Chrome, poppler and fonts
 docproof demo                    # build → check → verify → match on the fictional example
+docproof init ~/career           # your own private workspace: profile/fact-base.md + resume.json
 ```
 
 `brew install poppler` on macOS, `sudo apt install poppler-utils` on Debian/Ubuntu. Without
@@ -51,6 +52,9 @@ poppler, `pip install -e ".[pdf]"` gives a pypdf fallback for text checks (no PN
 | `docproof dump / edit / keywords / reorder` | Safe edits: every change is proven to touch only its target |
 | `docproof add-entry / add-link / add-summary / set-metadata` | Structural additions that clone the document's own formatting |
 | `docproof lint paths… --rules rules.json` | Catch stale facts and rules in your own prompt/skill files |
+| `docproof prompt tailor\|audit\|review …` | Paste-ready prompt for ChatGPT, Gemini or any LLM, with all the context |
+| `docproof apply in.docx reply.json out.docx --facts …` | Apply an LLM's JSON answer safely, then verify it |
+| `docproof init [DIR]` | Create a private workspace with fact-base and résumé templates |
 
 Run any command without arguments for its help.
 
@@ -77,6 +81,27 @@ $ docproof match examples/jobs/experimentation-analyst.txt --facts examples/prof
       ↳ known gap: GA4, Braze
 coverage: 77% of 13 requirements — genuine match
 ```
+
+## Use it with any AI assistant
+
+The CLI contains no AI and runs on its own. The assistant only proposes; the tools check.
+
+| You use | How |
+|---|---|
+| **Claude Code** | `scripts/install.sh`, then `/tailor <job ad>` — see the agents below |
+| **Codex CLI, Gemini CLI, Cursor** | open the repo (or your workspace) — they read [`AGENTS.md`](AGENTS.md) / [`GEMINI.md`](GEMINI.md) and drive the CLI |
+| **ChatGPT, Gemini, Claude.ai (in the browser)** | `docproof prompt …` builds a paste-ready prompt with your fact base, the ad and the match report; `docproof apply` applies the JSON answer and verifies it |
+
+```bash
+docproof prompt tailor --facts profile/fact-base.md --ad ad.txt --doc profile/base.docx --out prompt.txt
+# paste prompt.txt into ChatGPT / Gemini, save its JSON answer as reply.json, then:
+docproof apply profile/base.docx reply.json Jordan_Rivera_CV.docx --facts profile/fact-base.md
+docproof check Jordan_Rivera_CV.docx --orig profile/base.docx --png previews/
+docproof prompt audit  --facts profile/fact-base.md --doc Jordan_Rivera_CV.docx   # second opinion on every claim
+docproof prompt review --doc Jordan_Rivera_CV.docx --persona "hiring manager"      # fresh eyes, no fact base
+```
+
+If the model invents a number or claims a known gap, `apply` fails the verification and names it.
 
 ## The Claude Code agents
 

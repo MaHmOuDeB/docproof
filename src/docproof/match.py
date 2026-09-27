@@ -24,27 +24,30 @@ HEAD = re.compile(r"(requirement|qualification|what you('|’)ll do|what you bri
                   r"your profile|you have|you bring|about you|must|nice to have|aufgaben|profil|anforderung)", re.I)
 
 
+NICE = re.compile(r"nice to have|bonus|a plus|plus:|preferred|von vorteil|wünschenswert", re.I)
+
+
 def requirements(text):
-    reqs, in_list_section = [], False
+    """[(requirement, is_nice_to_have)]"""
+    reqs, in_list_section, nice_section = [], False, False
     for raw in text.splitlines():
         ln = raw.strip()
         if not ln:
             continue
         if HEAD.search(ln) and len(ln) < 60 and not ln.startswith(("-", "*", "•")):
-            in_list_section = True
+            in_list_section, nice_section = True, bool(NICE.search(ln))
             continue
         bullet = re.match(r"^[-*•·▪]\s*(.+)", ln)
-        if bullet:
-            reqs.append(bullet.group(1).strip())
-        elif in_list_section and len(ln.split()) >= 4:
-            reqs.append(ln)
-    return [r for r in reqs if len(tokens(r)) >= 2]
+        item = bullet.group(1).strip() if bullet else (ln if in_list_section and len(ln.split()) >= 4 else None)
+        if item and len(tokens(item)) >= 2:
+            reqs.append((item, nice_section or bool(NICE.search(item))))
+    return reqs
 
 
 def grade(req, fb):
     req_tokens = set(tokens(req))
-    gap_hits = [g for g in fb.gaps if re.search(rf"(?<![\w/]){re.escape(g)}(?![\w/])", req,
-                                                   re.I if len(g) > 2 else 0)]
+    from docproof.verify import gap_in
+    gap_hits = [g for g in fb.gaps if gap_in(g, req)]
     best, best_line, best_hit = 0.0, "", set()
     for line in fb.lines:
         hit = req_tokens & set(tokens(line))
@@ -65,15 +68,22 @@ def grade(req, fb):
 
 def match(ad_path, facts_path):
     fb = FactBase(facts_path)
-    rows = [grade(r, fb) for r in requirements(Path(ad_path).read_text(encoding="utf-8"))]
-    n = len(rows) or 1
-    ev = sum(r["verdict"] == "evidence" for r in rows)
-    pa = sum(r["verdict"] == "partial" for r in rows)
+    rows = []
+    for req, nice in requirements(Path(ad_path).read_text(encoding="utf-8")):
+        rows.append({**grade(req, fb), "nice_to_have": nice})
+    must = [r for r in rows if not r["nice_to_have"]] or rows
+    n = len(must) or 1
+    ev = sum(r["verdict"] == "evidence" for r in must)
+    pa = sum(r["verdict"] == "partial" for r in must)
     coverage = round(100 * (ev + 0.5 * pa) / n)
     band = ("genuine match" if coverage >= 70 else "honest middle ground — say so" if coverage >= 50
             else "a stretch — lean towards skipping")
     keywords = sorted({t for r in rows for t in r["missing"] if len(t) > 2})
-    return {"coverage": coverage, "band": band, "requirements": rows, "missing_terms": keywords}
+    warnings = [] if fb.gaps else ["the fact base has no '## Known gaps' section — gaps can't be flagged"]
+    if not rows:
+        warnings.append("no requirements found — is the first argument the job ad and --facts the fact base?")
+    return {"coverage": coverage, "band": band, "must_haves": len(must), "requirements": rows,
+            "missing_terms": keywords, "warnings": warnings}
 
 
 def main(argv=None):
@@ -86,12 +96,15 @@ def main(argv=None):
         return
     mark = {"evidence": "✓", "partial": "~", "gap": "✗"}
     for row in r["requirements"]:
-        print(f"{mark[row['verdict']]} {row['verdict']:<8} {row['score']:.2f}  {row['requirement'][:78]}")
+        tag = " (nice to have)" if row["nice_to_have"] else ""
+        print(f"{mark[row['verdict']]} {row['verdict']:<8} {row['score']:.2f}  {row['requirement'][:74]}{tag}")
         if row["verdict"] != "gap" and row["evidence"]:
             print(f"      ↳ {row['evidence'][:100]}")
         if row["known_gap"]:
             print(f"      ↳ known gap: {', '.join(row['known_gap'])}")
-    print(f"\ncoverage: {r['coverage']}% of {len(r['requirements'])} requirements — {r['band']}")
+    print(f"\ncoverage: {r['coverage']}% of {r['must_haves']} must-have requirements — {r['band']}")
+    for w in r["warnings"]:
+        print("WARN", w)
     if r["missing_terms"]:
         print("terms the fact base never mentions:", ", ".join(r["missing_terms"][:25]))
 

@@ -18,7 +18,7 @@ Everything here drives the `docproof` CLI, and every claim comes from one file: 
 ## How they hand off
 
 ```
-job ad ──► document-tailor ──► CV.docx + CV.pdf  (verify + check passed, PNGs looked at)
+job ad ──► document-tailor ──► <Name>_CV.docx + .pdf  (verify + check passed, PNGs looked at)
                                     │
                                     ├──► claim-auditor       (document + fact base)   → backed / overstated / unbacked
                                     └──► fresh-eyes-reviewer (document + ad only)      → score, top 5 fixes

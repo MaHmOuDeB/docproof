@@ -1,0 +1,21 @@
+{
+  "language": "en",
+  "name": "Your Name",
+  "title": "Your Target Title  |  Your Focus",
+  "photo": null,
+  "contact": ["City, Country", "you@example.com", "+00 000 000 000", "linkedin.com/in/you"],
+  "summary": "Two or three sentences built only from facts in your fact base.",
+  "experience": [
+    {"title": "Job title", "company": "Company", "location": "City, Country", "dates": "Mon YYYY – Mon YYYY",
+     "bullets": ["Verb + what + how + number.", "Verb + what + how + number."]}
+  ],
+  "skills": [
+    {"label": "Tools & Languages", "items": "Tool, Tool, Tool."},
+    {"label": "Methods", "items": "Method, method, method."}
+  ],
+  "education": [
+    {"degree": "Degree", "school": "School", "dates": "Mon YYYY – Mon YYYY", "details": ["Relevant coursework: …"]}
+  ],
+  "languages": [["English", "Native"]],
+  "projects": []
+}

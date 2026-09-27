@@ -22,6 +22,13 @@ Edit safely (every command proves that only the intended part changed)
   set-metadata <in.docx> <out.docx> "Title" "Author"
   text | inspect | header-diff                        plain text / sanity check / header byte-identity
 
+Use any AI assistant (ChatGPT, Gemini, Claude, …)
+  prompt       tailor|audit|review --facts … --ad … --doc …   ready-to-paste prompt with all context
+  apply        <in.docx> <reply.json> <out.docx> [--facts f]  apply the model's JSON reply safely, then verify
+
+Get started
+  init         [DIR]                                 create profile/fact-base.md + resume.json templates
+
 Maintenance
   lint         <paths…> --rules rules.json          stale-phrase linter for your own skill files
   doctor                                            check Chrome, poppler and fonts
@@ -53,6 +60,9 @@ COMMANDS = {
     "add-summary": ("add_summary", "run", []),
     "set-metadata": ("metadata", "main", []),
     "lint": ("lint", "main", []),
+    "init": ("init", "main", []),
+    "prompt": ("prompt", "main", []),
+    "apply": ("prompt", "apply_main", []),
 }
 HERE = Path(__file__).resolve().parent
 
@@ -137,7 +147,16 @@ def main(argv=None):
     mod, fn, prefix = COMMANDS[cmd]
     module = importlib.import_module(f"docproof.{mod}")
     sys.argv = [f"docproof {cmd}"] + prefix + rest
-    getattr(module, fn)()
+    import json
+    import zipfile
+    try:
+        getattr(module, fn)()
+    except FileNotFoundError as e:
+        sys.exit(f"docproof {cmd}: file not found: {e.filename}")
+    except zipfile.BadZipFile:
+        sys.exit(f"docproof {cmd}: not a .docx (zip) file — check the argument order: docproof {cmd} with no args shows usage")
+    except json.JSONDecodeError as e:
+        sys.exit(f"docproof {cmd}: invalid JSON ({e})")
 
 
 if __name__ == "__main__":

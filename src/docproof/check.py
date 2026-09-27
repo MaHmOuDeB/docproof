@@ -42,10 +42,11 @@ def main():
 
     code, out = run(DP + ["inspect", str(docx)])
     print("1 check   :", out.splitlines()[-1] if out else code)
-    if code: fails.append("check")
+    if code:
+        sys.exit("FAILED: not a usable .docx — nothing else was checked")
     if opt("--orig"):
         code, out = run(DP + ["header-diff", opt("--orig"), str(docx)])
-        print("2 header  :", out.splitlines()[-1] if out else code)
+        print("2 header  :", " | ".join(out.splitlines()) if out else code)
         if code or "PASSED" not in out: fails.append("header")
     code, out = run(DP + ["render", str(docx), "--out", str(pdf)])
     print("3 render  :", out.splitlines()[-1] if out else code)

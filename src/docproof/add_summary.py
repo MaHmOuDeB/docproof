@@ -11,7 +11,7 @@ the summary block. The tool proves that the only change is the two inserted para
 """
 import html, re, sys
 from pathlib import Path
-from docproof.edit import read_xml, write_docx  # noqa: E402
+from docproof.edit import read_xml, write_docx, ensure  # noqa: E402
 
 SUMMARY_PPR = ('<w:pPr><w:spacing w:after="40" w:line="276" w:lineRule="auto"/><w:jc w:val="both"/>'
                '<w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr>')
@@ -27,8 +27,10 @@ def main():
     src, dst, heading, text, before = sys.argv[1:6]
     xml = read_xml(src)
     paras = list(re.finditer(r"<w:p[ >].*?</w:p>", xml, re.S))
-    if any(ptext(m.group(0)).strip() == heading for m in paras):
-        sys.exit(f"ERROR: a {heading} heading already exists. Nothing written.")
+    from docproof.headings import SUMMARY_KEYS
+    existing = [ptext(m.group(0)).strip() for m in paras if ptext(m.group(0)).strip() in SUMMARY_KEYS + (heading,)]
+    if existing:
+        sys.exit(f"ERROR: the document already has a {existing[0]} section — one summary only. Nothing written.")
     hits = [m for m in paras if ptext(m.group(0)).strip() == before]
     if len(hits) != 1:
         sys.exit(f"ERROR: {len(hits)} paragraphs are exactly {before!r}; need 1. Nothing written.")
@@ -40,9 +42,9 @@ def main():
     open_tag = re.sub(r'w14:paraId="[0-9A-F]+"', f'w14:paraId="{new_id(1)}"', re.match(r"<w:p\b[^>]*>", h).group(0))
     new_p = (open_tag + SUMMARY_PPR + '<w:r><w:rPr><w:rtl w:val="0"/></w:rPr><w:t xml:space="preserve">'
              + html.escape(text, quote=False) + "</w:t></w:r></w:p>")
-    assert ptext(new_h).strip() == heading and ptext(new_p) == text
+    ensure(ptext(new_h).strip() == heading and ptext(new_p) == text, 'post-check failed')
     out = xml[:hits[0].start()] + new_h + new_p + xml[hits[0].start():]
-    assert out.replace(new_h + new_p, "", 1) == xml, "something besides the insert changed"
+    ensure(out.replace(new_h + new_p, "", 1) == xml, "something besides the insert changed")
     write_docx(src, dst, out)
     print(f"OK — inserted {heading} + summary ({len(text)} chars) before {before}; nothing else changed")
 

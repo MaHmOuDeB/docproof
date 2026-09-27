@@ -11,6 +11,8 @@ changed. Idempotent: if the rel-id already exists, nothing is written.
 import re
 import sys
 import zipfile
+
+from docproof.edit import ensure
 from xml.sax.saxutils import escape
 
 W_T = re.compile(r"<w:t(?:\s[^>]*)?>([^<]*)</w:t>")
@@ -61,16 +63,21 @@ def add_link(src, dst, prefix, label, url, rid=None):
             insert_at = run_start
     new_p = p[:insert_at] + block + p[insert_at:]
     new_xml = xml[:paras[0].start()] + new_p + xml[paras[0].end():]
-    assert new_xml.replace(new_p, orig, 1) == xml
+    ensure(new_xml.replace(new_p, orig, 1) == xml, 'post-check failed')
     new_text, old_text = "".join(W_T.findall(new_p)), "".join(W_T.findall(orig))
-    assert new_text.startswith(old_text.split("\t")[0][:20]) and escape(label) in new_text, "link text check failed"
+    ensure(new_text.startswith(old_text.split("\t")[0][:20]) and escape(label) in new_text, "link text check failed")
     files["word/document.xml"] = new_xml.encode()
     files["word/_rels/document.xml.rels"] = rels.replace(
         "</Relationships>", f'<Relationship Id="{rid}" Type="{HL_TYPE}" '
         f'Target="{escape(url)}" TargetMode="External"/></Relationships>').encode()
-    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zo:
+    import os
+    import tempfile
+    fd, tmp = tempfile.mkstemp(suffix=".docx", dir=os.path.dirname(os.path.abspath(dst)))
+    os.close(fd)
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zo:
         for it, _ in items:
             zo.writestr(it, files[it.filename])
+    os.replace(tmp, dst)
     print(f"OK — added '{label}' → {url} to the line starting {prefix!r}; nothing else changed")
 
 

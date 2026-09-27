@@ -2,11 +2,12 @@
 # Copy docproof's Claude Code skill, agents and command into ~/.claude (or ./.claude with --project).
 # Existing files with the same name are left alone unless you pass --force.
 set -euo pipefail
+CALLER="$PWD"
 cd "$(dirname "$0")/.."
 DEST="$HOME/.claude"; FORCE=0
 for a in "$@"; do
   case "$a" in
-    --project) DEST="$PWD/.claude" ;;
+    --project) DEST="$CALLER/.claude" ;;
     --force)   FORCE=1 ;;
     *) echo "usage: scripts/install.sh [--project] [--force]"; exit 2 ;;
   esac

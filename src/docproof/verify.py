@@ -27,6 +27,13 @@ NUMBER = re.compile(r"(?<![\w.])\d+(?:[.,]\d+)?\+?%?")
 PHONE = re.compile(r"\+?\d[\d\s()/-]{7,}\d")
 
 
+def gap_in(gap, text):
+    """Known-gap term as a whole word; very short terms ("R") also refuse &, -, / neighbours (R&D, R-squared)."""
+    if len(gap) <= 2:
+        return re.search(rf"(?<![\w/&-]){re.escape(gap)}(?![\w/&'-])", text) is not None
+    return re.search(rf"(?<![\w/]){re.escape(gap)}(?![\w/])", text, re.I) is not None
+
+
 def split_items(s):
     """Split 'a, b (c, d), e.' on commas outside parentheses."""
     items, depth, cur = [], 0, ""
@@ -54,7 +61,7 @@ def verify(docx, facts_path):
                 ctx = text[max(0, m.start() - 35):m.end() + 25].strip()
                 report["numbers"].append({"number": num, "context": ctx})
         for gap in fb.gaps:
-            if re.search(rf"(?<![\w/]){re.escape(gap)}(?![\w/])", p, re.I if len(gap) > 2 else 0):
+            if gap_in(gap, p):
                 report["gaps"].append({"term": gap, "context": p[:110]})
         m = re.match(r"^([A-Z][\w &/-]{1,40}):\s+(.+)$", p)
         if m and "," in m.group(2) and not p.startswith(("Technologies", "Technologien")):

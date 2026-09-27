@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 
 from helpers import EX, FACTS, Workdir, dp, have_chrome, xml
@@ -126,6 +127,98 @@ class TestVerifyAndMatch(unittest.TestCase):
         self.assertEqual(by_req["Strong SQL; experience with dbt"]["verdict"], "evidence")
 
 
+class TestRobustness(unittest.TestCase):
+    def test_in_place_edit_is_safe(self):
+        with Workdir() as w:
+            before = dp("text", w.cv).stdout
+            w.p("ops.json").write_text(json.dumps([{"op": "replace", "match": "Designed and analysed 40+",
+                                                    "old": "Designed", "new": "Planned"}]))
+            dp("edit", w.cv, w.p("ops.json"), w.cv)                       # same file in and out
+            self.assertIn("Planned and analysed", dp("text", w.cv).stdout)
+            w.p("kw.json").write_text(json.dumps({"Planned and analysed": ["A/B tests"]}))
+            dp("keywords", w.cv, w.cv, w.p("kw.json"))
+            dp("reorder", w.cv, w.cv, "sections", "summary,professional experience,projects,skills,education,languages")
+            self.assertEqual(len(dp("text", w.cv).stdout.splitlines()), len(before.splitlines()))
+
+    def test_failed_check_writes_nothing(self):
+        with Workdir() as w:
+            w.p("ops.json").write_text(json.dumps([{"op": "delete", "match": "Nonexistent line"}]))
+            self.assertNotEqual(dp("edit", w.cv, w.p("ops.json"), w.p("o.docx"), check=False).returncode, 0)
+            self.assertFalse(w.p("o.docx").exists())
+
+    def test_short_gap_terms_do_not_hit_compounds(self):
+        from docproof.verify import gap_in
+        self.assertTrue(gap_in("R", "Python and R for analysis"))
+        self.assertFalse(gap_in("R", "worked in R&D"))
+        self.assertFalse(gap_in("R", "an R-squared of 0.8"))
+
+    def test_every_command_without_args_prints_help_not_a_traceback(self):
+        for cmd in ("build", "render", "check", "verify", "match", "dump", "edit", "text", "inspect",
+                    "header-diff", "keywords", "reorder", "add-entry", "add-link", "add-summary",
+                    "set-metadata", "lint", "prompt", "apply"):
+            r = dp(cmd, check=False)
+            self.assertNotEqual(r.returncode, 0, cmd)
+            self.assertNotIn("Traceback", r.stderr + r.stdout, cmd)
+
+    def test_friendly_error_for_missing_file_and_swapped_args(self):
+        r = dp("verify", "nope.docx", "--facts", FACTS, check=False)
+        self.assertIn("file not found", r.stderr)
+        with Workdir() as w:
+            r = dp("edit", w.cv, w.p("out.docx"), w.p("ops.json"), check=False)   # swapped
+            self.assertIn("usage", r.stderr)
+
+
+REPLY = """```json
+{
+  "go_no_go": "apply — strong experimentation evidence; GA4 and Braze are gaps",
+  "ops": [
+    {"op": "set_text", "zone": "title", "match": "Product Analyst",
+     "text": "Experimentation Analyst  |  A/B Testing & Retention Analytics"},
+    {"op": "replace", "match": "Designed and analysed 40+", "old": "Designed", "new": "Planned"},
+    {"op": "delete", "match": "Cleaned and reconciled 2 years"}
+  ],
+  "keywords": {"Planned and analysed 40+": ["A/B tests"]},
+  "notes": ["Prepare an answer on GA4 and Braze."]
+}
+```"""
+
+
+class TestAnyAssistant(unittest.TestCase):
+    def test_init_creates_templates_without_overwriting(self):
+        with Workdir() as w:
+            out = dp("init", w.p("me")).stdout
+            self.assertIn("created", out)
+            self.assertTrue(w.p("me/profile/fact-base.md").exists())
+            dp("build", w.p("me/profile/resume.json"), w.p("me/base.docx"))
+            self.assertIn("exists, kept", dp("init", w.p("me")).stdout)
+
+    def test_prompts_contain_all_context(self):
+        with Workdir() as w:
+            ad = EX / "jobs" / "experimentation-analyst.txt"
+            t = dp("prompt", "tailor", "--facts", FACTS, "--ad", ad, "--doc", w.cv).stdout
+            for needle in ("## Known gaps", "Brightleaf Health", "coverage:", "JORDAN RIVERA", '"ops"'):
+                self.assertIn(needle, t)
+            self.assertIn("MACHINE CHECK", dp("prompt", "audit", "--facts", FACTS, "--doc", w.cv).stdout)
+            r = dp("prompt", "review", "--doc", w.cv, "--persona", "hiring manager").stdout
+            self.assertIn("You are a hiring manager", r)
+            self.assertNotIn("Known gaps", r)                   # the reviewer never sees the fact base
+
+    def test_apply_llm_reply_then_verify(self):
+        with Workdir() as w:
+            w.p("reply.json").write_text(REPLY)
+            out = dp("apply", w.cv, w.p("reply.json"), w.p("t.docx"), "--facts", FACTS).stdout
+            self.assertIn("VERIFY PASSED", out)
+            self.assertIn("note: Prepare an answer", out)
+            text = dp("text", w.p("t.docx")).stdout
+            self.assertIn("Experimentation Analyst", text)
+            self.assertIn("Planned and analysed 40+", text)
+            bad = REPLY.replace('"new": "Planned"', '"new": "Planned 50+ tests and"')
+            w.p("bad.json").write_text(bad)
+            r = dp("apply", w.cv, w.p("bad.json"), w.p("b.docx"), "--facts", FACTS, check=False)
+            self.assertEqual(r.returncode, 1)
+            self.assertIn("50+", r.stdout)
+
+
 class TestLintAndCli(unittest.TestCase):
     def test_lint(self):
         with Workdir() as w:
@@ -140,7 +233,7 @@ class TestLintAndCli(unittest.TestCase):
         self.assertNotEqual(dp("nope", check=False).returncode, 0)
 
 
-@unittest.skipUnless(have_chrome(), "needs Chrome/Chromium and poppler")
+@unittest.skipUnless(have_chrome() or os.environ.get("DOCPROOF_REQUIRE_CHROME"), "needs Chrome/Chromium and poppler")
 class TestRender(unittest.TestCase):
     def test_render_and_full_check(self):
         with Workdir() as w:

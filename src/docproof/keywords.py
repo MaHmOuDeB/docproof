@@ -16,7 +16,7 @@ unchanged and that nothing outside the edited paragraphs changed.
 """
 import html, json, re, sys
 from pathlib import Path
-from docproof.edit import read_xml, write_docx  # noqa: E402
+from docproof.edit import read_xml, write_docx, ensure  # noqa: E402
 
 BOLD = '<w:b w:val="1"/><w:bCs w:val="1"/>'
 
@@ -48,9 +48,10 @@ def embolden(rpr):
 
 
 def main():
+    if len(sys.argv) != 4 or not (sys.argv[1].endswith(".docx") and sys.argv[2].endswith(".docx")
+                                  and sys.argv[3].endswith(".json")):
+        sys.exit(__doc__)
     src, dst, spec_path = sys.argv[1:4]
-    if not (src.endswith(".docx") and dst.endswith(".docx")):
-        sys.exit("usage: docproof keywords in.docx out.docx spec.json")
     spec = json.loads(Path(spec_path).read_text())
     xml = read_xml(src)
     body_start = xml.find("</w:tbl>")
@@ -63,6 +64,8 @@ def main():
         p = hits[0].group(0)
         if any(t in p for t in ("<w:tab/>", "<w:hyperlink", "<w:drawing")):
             sys.exit(f"ERROR: {prefix!r} is not a simple paragraph. Nothing written.")
+        if len(phrases) > 2:
+            sys.exit(f"ERROR: {len(phrases)} phrases for {prefix!r}; the emphasis budget is one (two at most). Nothing written.")
         rs = runs(p)
         chars = [(c, unbold(rpr)) for rpr, t in rs for c in t]      # spec replaces existing bold
         text = "".join(c for c, _ in chars)
@@ -86,12 +89,12 @@ def main():
         new_runs = "".join(f'<w:r>{k}<w:t xml:space="preserve">{html.escape(t, quote=False)}</w:t></w:r>'
                            for k, t in groups)
         new_p = open_tag + (ppr.group(0) if ppr else "") + new_runs + "</w:p>"
-        assert ptext(new_p) == text, f"text changed in {prefix!r}"
+        ensure(ptext(new_p) == text, f"text changed in {prefix!r}")
         new_xml = new_xml[:hits[0].start()] + new_p + new_xml[hits[0].end():]
         done += 1
     # everything outside the edited paragraphs is identical
     strip = lambda x: re.sub(r"<w:p[ >].*?</w:p>", lambda m: ptext(m.group(0)), x, flags=re.S)
-    assert strip(new_xml) == strip(xml), "text outside the edited paragraphs changed"
+    ensure(strip(new_xml) == strip(xml), "text outside the edited paragraphs changed")
     write_docx(src, dst, new_xml)
     print(f"OK — bolded key phrases in {done} paragraph(s); text unchanged")
 

@@ -130,12 +130,12 @@ error. No hand-edited XML.
 ## 7. Verification gates (all must pass before delivery)
 
 ```bash
-docproof verify applications/<company>/CV.docx --facts <fact base>
-docproof check  applications/<company>/CV.docx --orig <base.docx> --png applications/<company>/png
-docproof render applications/<company>/CV.docx --out applications/<company>/CV.pdf --png applications/<company>/png
+docproof verify applications/<company>/<First_Last>_CV.docx --facts <fact base>
+docproof check  applications/<company>/<First_Last>_CV.docx --orig <base.docx> --png applications/<company>/png
+# check also writes <First_Last>_CV.pdf next to the .docx
 ```
 
-- `verify`: zero untraced numbers or tools, zero Known-gaps terms. Fix the document, never the
+- `verify`: zero untraced numbers, zero Known-gaps terms; every skills-row WARN checked by hand. Tools named in bullets aren't machine-checked — read each one against the fact base yourself. Fix the document, never the
   fact base, unless the user confirms a new fact.
 - `check`: zero FAIL. Every WARN fixed or explained in the delivery.
 - **Open and look at every PNG.** Check short sections aren't split, entries with ≤4 bullets

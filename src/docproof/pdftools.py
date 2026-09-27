@@ -43,7 +43,7 @@ def fonts_in(pdf):
     return []
 
 
-def to_pngs(pdf, out_prefix, dpi=80):
+def to_pngs(pdf, out_prefix, dpi=120):
     """Write <out_prefix>-1.png … ; returns False if pdftoppm is unavailable."""
     if not shutil.which("pdftoppm"):
         return False

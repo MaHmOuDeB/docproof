@@ -68,13 +68,32 @@ def read_xml(path):
         return z.read("word/document.xml").decode("utf-8")
 
 
+def ensure(cond, msg="post-check failed"):
+    """A real check (unlike assert, it survives python -O). Nothing is written when it fails."""
+    if not cond:
+        raise SystemExit(f"ERROR: {msg}. Nothing was written.")
+
+
 def write_docx(src, dst, new_xml):
-    with zipfile.ZipFile(src) as zin, zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zout:
-        for item in zin.infolist():
-            data = zin.read(item.filename)
-            if item.filename == "word/document.xml":
-                data = new_xml.encode("utf-8")
-            zout.writestr(item, data)
+    """Write via a temp file in the target folder, then replace atomically — so src == dst is safe
+    and a crash never leaves a half-written document."""
+    import os
+    import tempfile
+    from pathlib import Path
+    dst = Path(dst)
+    fd, tmp = tempfile.mkstemp(suffix=".docx", dir=dst.resolve().parent)
+    os.close(fd)
+    try:
+        with zipfile.ZipFile(src) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+                if item.filename == "word/document.xml":
+                    data = new_xml.encode("utf-8")
+                zout.writestr(item, data)
+        os.replace(tmp, dst)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
 
 
 def is_real_docx(path):
@@ -357,15 +376,14 @@ def cmd_apply(path, ops_path, out, anchor=None):
             raise SystemExit(f'ERROR: op {n}: unknown op "{kind}".')
         print(f"  ✓ op {n}: {kind} [{zone}] {op.get('match') or op.get('anchor')}")
 
-    write_docx(path, out, xml)
-    # post-condition: every new text is present exactly as written
-    new_xml = read_xml(out)
-    texts = [p_text(new_xml[s:e]) for s, e in paragraphs(new_xml)]
+    # post-condition, checked in memory BEFORE anything is written: every new text is present
+    texts = [p_text(xml[s:e]) for s, e in paragraphs(xml)]
     for op in ops:
         if op["op"] in ("set_text", "insert_after", "set_segments"):
-            assert op["text"] in texts, f'post-check failed: "{op["text"][:60]}…" not found as a paragraph'
+            ensure(op["text"] in texts, f'post-check failed: "{op["text"][:60]}…" not found as a paragraph')
         if op["op"] == "delete":
-            assert not any(op["match"] in t for t in texts), f'post-check failed: "{op["match"]}" still present'
+            ensure(not any(op["match"] in t for t in texts), f'post-check failed: "{op["match"]}" still present')
+    write_docx(path, out, xml)
     print(f"Wrote {out} — all post-checks passed.")
 
 
@@ -418,6 +436,15 @@ def run():
         print(__doc__)
         sys.exit(0)
     cmd, args = a[0], a[1:]
+    need = {"check": (1, (".docx",)), "dump": (1, (".docx",)), "text": (1, (".docx",)),
+            "apply": (3, (".docx", ".json", ".docx")), "verify": (2, (".docx", ".docx"))}
+    if cmd in need:
+        n, exts = need[cmd]
+        if len(args) != n or any(not str(x).lower().endswith(e) for x, e in zip(args, exts)):
+            usage = {"check": "inspect <doc.docx>", "dump": "dump <doc.docx> [--runs]", "text": "text <doc.docx>",
+                     "apply": "edit <doc.docx> <ops.json> <out.docx>",
+                     "verify": "header-diff <original.docx> <edited.docx>"}[cmd]
+            sys.exit(f"usage: docproof {usage}\n\n" + __doc__)
     {"check": lambda: cmd_check(*args),
      "dump": lambda: cmd_dump(*args, anchor=anchor, runs=show_runs),
      "apply": lambda: cmd_apply(*args, anchor=anchor),

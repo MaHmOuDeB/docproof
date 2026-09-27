@@ -11,7 +11,7 @@ the fact base; *what* to write comes from `section-by-section.md`, `bullet-writi
 | Fact base | `profile/fact-base.md` in the working folder | a path in the request or in the user's `CLAUDE.md` |
 | Base document (source of truth) | `profile/base.docx`, or `profile/resume.json` built with `docproof build` | same |
 | Backups of the base | `profile/_backups/`, latest one per base only | — |
-| Tailored output | `applications/<company>/CV.docx` + `CV.pdf` (Lebenslauf: `Lebenslauf.docx/.pdf`) | same |
+| Tailored output | `applications/<company>/<First_Last>_CV.docx` + `.pdf` (German: `<First_Last>_Lebenslauf.*`) | same |
 | Page images to look at | a scratch folder, e.g. `applications/<company>/png/` | — |
 | Job ad text | `applications/<company>/job-ad.txt` | — |
 
@@ -28,25 +28,25 @@ A=applications/acme; F=profile/fact-base.md
 # 0. Evidence first
 docproof match $A/job-ad.txt --facts $F
 
-# 1. Start from the base (each step writes a new file; never in = out)
+# 1. Start from the base (each step writes a new file, so every stage can be inspected;
+#    in = out is also safe — writes are atomic)
 cp profile/base.docx $A/work-0.docx
 docproof dump $A/work-0.docx --runs                     # ALWAYS dump before writing ops
 
 # 2. Text edits (one batched ops file), then structure as needed
 docproof edit $A/work-0.docx $A/ops.json $A/work-1.docx
-docproof reorder $A/work-1.docx $A/work-2.docx sections "Summary,Experience,Projects,Skills,Education,Languages"
+docproof reorder $A/work-1.docx $A/work-2.docx sections "SUMMARY,PROFESSIONAL EXPERIENCE,PROJECTS,SKILLS,EDUCATION,LANGUAGES"
 docproof reorder in.docx out.docx move "<paragraph prefix>" "<before paragraph prefix>"
 docproof add-entry in.docx out.docx entry.json          # title⇥date line + bullets + meta line
 docproof add-link in.docx out.docx "<line prefix>" "Live demo" https://example.com
 docproof add-summary in.docx out.docx KURZPROFIL "<text>" BERUFSERFAHRUNG   # German CVs
 
 # 3. Emphasis, after the text is final
-docproof keywords $A/work-2.docx $A/CV.docx $A/kw.json  # {"<bullet prefix>": ["phrase"]}
+docproof keywords $A/work-2.docx $A/Jordan_Rivera_CV.docx $A/kw.json  # {"<bullet prefix>": ["phrase"]}
 
 # 4. Gates
-docproof verify $A/CV.docx --facts $F
-docproof check  $A/CV.docx --orig profile/base.docx --png $A/png
-docproof render $A/CV.docx --out $A/CV.pdf --png $A/png
+docproof verify $A/Jordan_Rivera_CV.docx --facts $F
+docproof check  $A/Jordan_Rivera_CV.docx --orig profile/base.docx --png $A/png   # also writes the PDF next to the .docx
 ```
 
 Then **open and look at every PNG.** Not optional. The scripts catch what they were written to
@@ -64,8 +64,8 @@ fonts work.
 
 | Gate | Passes when | On failure |
 |---|---|---|
-| `docproof verify` | every number and tool in the document appears in the fact base; no `## Known gaps` term appears | remove or reword the claim; never add the claim to the fact base to make it pass unless the user confirms it's true |
-| `docproof check` | real .docx; header identical to `--orig` (title line excepted); every word in the PDF; page starts at a heading; no one-word widows; links resolve; no job-search framing | fix every FAIL; fix each WARN or state in the delivery why it's acceptable |
+| `docproof verify` | every number in the document appears in the fact base and no `## Known gaps` term appears (hard fail); skills-row items not backed by the fact base are WARNs. Tools named inside bullets are not machine-checked — that is the claim-auditor's job | remove or reword the claim; never add the claim to the fact base to make it pass unless the user confirms it's true |
+| `docproof check` | real .docx; header identical to `--orig` (title line excepted); every word in the PDF; page starts at a heading; no one-word widows; every link listed (open them yourself); no job-search framing | fix every FAIL; fix each WARN or state in the delivery why it's acceptable |
 | PNGs looked at | you opened each page image and found nothing wrong | fix, re-run both gates |
 
 Nothing is delivered until all three pass.
@@ -88,18 +88,21 @@ Nothing is delivered until all three pass.
 | `match` | requirement → evidence map, coverage %, gap list | decide go/no-go for you; it's input to your judgment |
 | `lint` | flags stale phrases in skill/agent files against a rules file | — |
 
-Example `ops.json`:
+Example `ops.json` (works on the fictional example built from `examples/resume.json`):
 
 ```json
 [
   {"op": "set_text", "zone": "title", "match": "Product Analyst",
-   "text": "Product Analyst | Experimentation & A/B Testing | SQL, dbt"},
-  {"op": "replace", "match": "Ran 40+ A/B tests", "old": "Ran", "new": "Designed and analysed"},
-  {"op": "delete", "match": "Maintained the team wiki"},
-  {"op": "insert_after", "anchor": "Automated the weekly KPI report", "like": "Automated the weekly KPI report",
-   "text": "Built a churn-prediction model (logistic regression) that improved save-offer targeting."}
+   "text": "Experimentation Analyst  |  A/B Testing & Retention Analytics  |  SQL, dbt"},
+  {"op": "replace", "match": "Designed and analysed 40+", "old": "Designed", "new": "Planned"},
+  {"op": "delete", "match": "Cleaned and reconciled 2 years"},
+  {"op": "insert_after", "anchor": "Automated the weekly KPI report with", "like": "Automated the weekly KPI report with",
+   "text": "Presented monthly experiment reviews to product leadership."}
 ]
 ```
+
+A `match` must hit exactly one paragraph: "Automated the weekly KPI report" alone would also match
+the summary, so the ops above use a longer prefix.
 
 (Scope verbs like "Designed" only where the fact base uses them.)
 

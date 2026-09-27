@@ -59,7 +59,7 @@ Check these on the rendered PNGs, every time:
 - **Tighten wording instead of shrinking type.** If a CV runs long, cut words first. Don't push
   body text below ~8.8pt or side margins below ~16mm.
 
-`docproof check` reports page starts, widows and stranded lines, but the PNGs are the final check.
+`docproof check` reports page starts and one-word widows; stranded meta lines and cramped pages only show in the PNGs, which are the final check.
 
 ## Page count: trust the Chrome PDF
 

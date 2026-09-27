@@ -21,4 +21,4 @@ docproof = "docproof.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-docproof = ["assets/fonts/*"]
+docproof = ["assets/fonts/*", "prompts/*.md", "templates/*"]

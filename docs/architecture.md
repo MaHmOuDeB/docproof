@@ -44,6 +44,14 @@ flowchart LR
 | Layout | `check` | a page starts mid-entry, a bullet ends on one word, "tailored" phrasing appears (WARN) |
 | Eyes | the agent | nobody looked at the PNGs |
 
+## Without Claude Code
+
+The same loop works with any assistant: `docproof prompt tailor` packs the fact base, the ad, the
+`match` report and the document into one prompt that asks for a JSON list of edit operations;
+`docproof apply` runs them through the same safe editors and then `verify`. `prompt audit` and
+`prompt review` recreate the auditor and the fresh-eyes reviewer as paste-ready prompts. Coding
+agents (Codex CLI, Gemini CLI, Cursor) get their instructions from `AGENTS.md`.
+
 ## Why the agents are separate
 
 - The **author** is optimising for fit, which is exactly the pressure that produces overclaiming.

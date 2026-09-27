@@ -138,7 +138,7 @@ fact base, automated verification), never "analysed job ads" or "tailored CVs".
 - [ ] Summary speaks to this role and company
 
 **Consistency and credibility**
-- [ ] `docproof verify` passes (every number and tool traced; no Known-gaps term)
+- [ ] `docproof verify` passes (every number traced; no Known-gaps term) and every tool in the bullets is in the fact base
 - [ ] Verbs vary; no three identical openers
 - [ ] Reads as a case for this job, not a list of everything
 - [ ] Title line fitted to this job; ~1–1.5 pages; Interests dropped unless they add signal
