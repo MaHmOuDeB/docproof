@@ -1,0 +1,6 @@
+[
+  {"pattern": "\\bAirflow\\b(?!.*known gap)", "fix": "Airflow is a known gap in the example fact base — never claim it"},
+  {"pattern": "\\b50\\+ A/B tests\\b", "fix": "the fact base says 40+ A/B tests (30+ shipped)"},
+  {"pattern": "\\bSenior Product Analyst\\b", "fix": "the title was Product Analyst"},
+  {"pattern": "\\bno summary\\b.{0,40}\\bGerman\\b", "fix": "German CVs open with a 3–4 line Kurzprofil"}
+]

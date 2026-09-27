@@ -1,0 +1,16 @@
+# your private data — never commit it
+/profile/
+/applications/
+*.private.*
+
+# build / runtime
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.build/
+docproof-demo/
+dist/
+build/
+.DS_Store
+~$*

@@ -1,0 +1,55 @@
+{
+  "language": "en",
+  "name": "Jordan Rivera",
+  "title": "Product Analyst  |  Experimentation & Retention Analytics",
+  "contact": ["London, UK", "jordan.rivera@example.com", "+44 20 7946 0123", "jordanrivera.example"],
+  "summary": "Product analyst with three years at a subscription app: designed and analysed 40+ A/B tests (30+ shipped) and built the dbt KPI layer 5 teams use as their single source of truth. Automated the weekly KPI report, cutting preparation from ~6 hours to ~45 minutes. MSc in Business Analytics; works in SQL, dbt and Python.",
+  "experience": [
+    {
+      "title": "Product Analyst",
+      "company": "Northwind Apps",
+      "location": "London, UK",
+      "dates": "Mar 2022 – Aug 2025",
+      "bullets": [
+        "Designed and analysed 40+ A/B tests on onboarding, paywall and notification flows, from hypothesis and power analysis to a ship/no-ship recommendation; 30+ shipped.",
+        "Built a SQL + dbt KPI layer (activation, retention, revenue) used by 5 product and marketing teams as their single source of truth.",
+        "Automated the weekly KPI report with Python and scheduled dbt runs, cutting preparation from ~6 hours to ~45 minutes.",
+        "Built a churn-prediction model (logistic regression) that ranked at-risk subscribers and improved save-offer targeting.",
+        "Defined the event tracking plan for the new onboarding flow with engineering: 18 events and their properties."
+      ]
+    },
+    {
+      "title": "Data Analyst Intern",
+      "company": "Harbor Retail Group",
+      "location": "London, UK",
+      "dates": "Jun 2021 – Sep 2021",
+      "bullets": [
+        "Cleaned and reconciled 2 years of store sales data in Excel and SQL for the pricing team.",
+        "Built a weekly Tableau dashboard of promotion performance for 4 category managers."
+      ]
+    }
+  ],
+  "skills": [
+    {"label": "Tools & Languages", "items": "SQL, dbt, Python (pandas, scikit-learn), Tableau, Looker Studio, Excel, Git."},
+    {"label": "Analytics & Methods", "items": "A/B testing & power analysis, KPI modelling, churn prediction (logistic regression, gradient boosting), event tracking plans, stakeholder reporting."},
+    {"label": "AI & Automation", "items": "AI-assisted analysis & coding (ChatGPT, GitHub Copilot), report automation (Python, dbt)."}
+  ],
+  "education": [
+    {"degree": "MSc Business Analytics", "school": "Northbridge University", "dates": "Sep 2021 – Sep 2022",
+     "details": ["Dissertation: uplift modelling for retention offers."]},
+    {"degree": "BSc Economics", "school": "Kingsbridge College", "dates": "Sep 2018 – Jun 2021"}
+  ],
+  "languages": [["English", "Native"], ["Spanish", "C1"], ["German", "A2"]],
+  "projects": [
+    {
+      "name": "Churn Radar",
+      "context": "Personal Project",
+      "dates": "2025",
+      "links": [{"label": "Live demo", "url": "https://jordanrivera.example/churn-radar"}],
+      "bullets": [
+        "Built an open-source churn dashboard on a public telco dataset: survival curves, cohort retention and a gradient-boosting model (AUC 0.84 on a held-out set)."
+      ],
+      "tech": "Python, scikit-learn, DuckDB, Streamlit."
+    }
+  ]
+}

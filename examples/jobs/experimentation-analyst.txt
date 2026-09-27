@@ -1,0 +1,22 @@
+Experimentation Analyst — Brightleaf Health (fictional), London
+
+About the role
+Brightleaf is a subscription wellness app. You will own the analysis of our product experiments
+and help teams make faster, better decisions.
+
+What you'll do
+- Design A/B tests with product managers, including power analysis and success metrics
+- Analyse experiment results and write clear ship/no-ship recommendations
+- Build and maintain dashboards for activation and retention KPIs
+- Model data in dbt and write production-quality SQL
+- Partner with engineering on event tracking and data quality
+- Present insights to product leadership
+- Automate recurring reporting
+
+What you bring
+- 2+ years in product or experimentation analytics
+- Strong SQL; experience with dbt
+- Python for analysis (pandas, statsmodels or similar)
+- Experience with GA4 and Braze
+- Excellent communication with non-technical stakeholders
+- Nice to have: Snowflake, Airflow

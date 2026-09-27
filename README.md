@@ -1,0 +1,123 @@
+# docproof
+
+**Fact-grounded documents with automated verification.** Keep every fact about yourself in one
+Markdown file, and let a Python CLI and a small team of Claude Code agents build, tailor,
+fact-check and typeset documents from it. Every figure in the output is traced back to the fact
+base, and the layout is checked before anything leaves your machine.
+
+The reference use case is a CV tailored to a job ad, but the pipeline works for any document
+that must stay true to a source: bios, grant CVs, profiles, one-pagers.
+
+<p align="center"><img src="docs/sample-cv.png" width="560" alt="Sample CV rendered by docproof"></p>
+
+## Why
+
+LLMs are good at rewriting and bad at staying honest. Tailoring a document by hand for the 30th
+time is slow; letting a model do it drifts into claims you never made. docproof separates the two
+jobs:
+
+- **A single fact base** (`profile/fact-base.md`) is the only source of truth, including a
+  `## Known gaps` list of things you must never claim.
+- **Deterministic tools** do the risky parts: they edit Word files surgically and prove that only
+  the intended paragraph changed, check every number against the fact base, and verify the
+  rendered PDF (page breaks, widows, links, every word present).
+- **Agents with separate roles** do the judgment: an author tailors, an auditor checks every claim
+  against the fact base, and a context-free reviewer reads it like a stranger would.
+
+## Quick start
+
+Needs Python ≥ 3.9 and Google Chrome or Chromium (for PDF rendering). Poppler (`pdftotext`,
+`pdftoppm`) is recommended for page checks and PNG previews.
+
+```bash
+git clone https://github.com/MaHmOuDeB/docproof && cd docproof
+pip install -e .                 # installs the `docproof` command (no runtime dependencies)
+docproof doctor                  # checks Chrome, poppler and fonts
+docproof demo                    # build → check → verify → match on the fictional example
+```
+
+`brew install poppler` on macOS, `sudo apt install poppler-utils` on Debian/Ubuntu. Without
+poppler, `pip install -e ".[pdf]"` gives a pypdf fallback for text checks (no PNG previews).
+
+## The CLI
+
+| Command | What it does |
+|---|---|
+| `docproof build resume.json out.docx` | Build a Word document from JSON in the house template |
+| `docproof render doc.docx --out doc.pdf --png previews/` | Typeset a designed PDF (Inter, embedded) with headless Chrome |
+| `docproof check doc.docx [--orig base.docx] --png dir/` | Full gate: real .docx, protected header unchanged, every word in the PDF, page starts, widows, links, "tailored-for-the-ad" phrasing |
+| `docproof verify doc.docx --facts fact-base.md` | Every figure must appear in the fact base; no "known gap" may be claimed; skills rows are cross-checked |
+| `docproof match job-ad.txt --facts fact-base.md` | Requirement → evidence map with a coverage score (≥70% genuine, 50–70% honest middle, <50% stretch) and the gaps |
+| `docproof dump / edit / keywords / reorder` | Safe edits: every change is proven to touch only its target |
+| `docproof add-entry / add-link / add-summary / set-metadata` | Structural additions that clone the document's own formatting |
+| `docproof lint paths… --rules rules.json` | Catch stale facts and rules in your own prompt/skill files |
+
+Run any command without arguments for its help.
+
+### What `verify` catches
+
+```text
+$ docproof verify tailored.docx --facts profile/fact-base.md
+numbers   : 14 checked, 1 not in the fact base
+  FAIL    '60+'  …Designed and analysed 60+ A/B tests on onboarding,…
+known gaps: 1 claimed
+  FAIL 'Airflow' in: Automated the weekly KPI report with Python and Airflow, cutting preparation from ~6 hours…
+skills    : 0 item(s) with words the fact base doesn't mention
+VERIFY FAILED
+```
+
+### What `match` shows
+
+```text
+$ docproof match examples/jobs/experimentation-analyst.txt --facts examples/profile/fact-base.md
+✓ evidence 0.62  Design A/B tests with product managers, including power analysis and success m
+      ↳ Designed and analysed 40+ A/B tests on onboarding, paywall and notification flows, from
+✓ evidence 1.00  Strong SQL; experience with dbt
+✗ gap      0.00  Experience with GA4 and Braze
+      ↳ known gap: GA4, Braze
+coverage: 77% of 13 requirements — genuine match
+```
+
+## The Claude Code agents
+
+`scripts/install.sh` copies the Claude side into `~/.claude/` (or `--project` for `./.claude/`):
+
+| | Role |
+|---|---|
+| `doc-craft` skill | How CVs are read, section-by-section rules, bullet writing, honest tailoring, layout rules, English and German conventions, review modes |
+| `document-tailor` agent | Go/no-go with `match`, tailors section by section through the CLI, and cannot finish until `verify` and `check` pass and the PNGs have been looked at |
+| `claim-auditor` agent | Independent line-by-line claim audit against the fact base (numbers, tools, "led" vs "supported"); never edits |
+| `fresh-eyes-reviewer` agent | Reviews with **no** access to the fact base, as a named persona (recruiter, hiring manager…); run 2–3 in parallel |
+| `/tailor <job ad>` | Runs author → auditor → reviewer and triages the findings |
+
+See [`claude/README.md`](claude/README.md) and [`docs/architecture.md`](docs/architecture.md).
+
+## Your own fact base
+
+Start from [`examples/profile/fact-base.md`](examples/profile/fact-base.md) (a fictional
+candidate) and [`examples/resume.json`](examples/resume.json). Keep yours **outside** this
+repository or in a private fork — `profile/` and `applications/` are git-ignored by default.
+
+## Design rules baked in
+
+- Never invent experience: a fact that isn't in the fact base doesn't go in a document.
+- Trim words, never drop numbers.
+- The reader wrote the job ad — the document never shows that it was tailored.
+- Emphasis budget: at most two bold items per bullet (one key phrase plus figures).
+- Short sections and entries with ≤ 4 bullets never split across pages; no one-word widows.
+- Tighten wording instead of shrinking type.
+- Always look at the rendered pages.
+
+## Development
+
+```bash
+python -m unittest discover -s tests -v
+docproof lint claude --rules examples/lint-rules.json
+```
+
+CI runs the tests (including a real Chrome render) and the demo on every push.
+
+## License
+
+MIT for the code. The bundled Inter font is under the SIL Open Font License
+(`src/docproof/assets/fonts/LICENSE.txt`).

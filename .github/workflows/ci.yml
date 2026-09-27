@@ -1,0 +1,33 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install poppler
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Install docproof
+        run: pip install -e .
+      - name: Doctor
+        run: docproof doctor
+      - name: Tests (including a real headless-Chrome render)
+        run: python -m unittest discover -s tests -v
+      - name: Demo
+        run: docproof demo --out demo-out
+      - name: Lint the Claude files
+        run: docproof lint claude --rules examples/lint-rules.json
+      - uses: actions/upload-artifact@v4
+        if: matrix.python == '3.12'
+        with:
+          name: demo-output
+          path: demo-out/
