@@ -25,8 +25,9 @@ moving them to the system trash, not with `rm`.
 ```bash
 A=applications/acme; F=profile/fact-base.md
 
-# 0. Evidence first
+# 0. Evidence first, and where the base stands
 docproof match $A/job-ad.txt --facts $F
+docproof coverage $A/job-ad.txt --doc profile/base.docx --facts $F     # coverage now → reachable
 
 # 1. Start from the base (each step writes a new file, so every stage can be inspected;
 #    in = out is also safe — writes are atomic)
@@ -48,6 +49,10 @@ docproof keywords $A/work-2.docx $A/Jordan_Rivera_CV.docx $A/kw.json  # {"<bulle
 docproof verify $A/Jordan_Rivera_CV.docx --facts $F
 docproof story  $A/Jordan_Rivera_CV.docx --ad $A/job-ad.txt --facts $F
 docproof check  $A/Jordan_Rivera_CV.docx --orig profile/base.docx --png $A/png   # also writes the PDF next to the .docx
+docproof coverage $A/job-ad.txt --doc $A/Jordan_Rivera_CV.docx --facts $F         # report before → after
+
+# 5. Only when asked: cover letter (checked like the CV)
+docproof prose $A/Cover_Letter_Jordan_Rivera.md --kind letter --facts $F --ad $A/job-ad.txt
 ```
 
 Then **open and look at every PNG.** Not optional. The scripts catch what they were written to
@@ -58,7 +63,8 @@ header tables): write `resume.json`, run `docproof build resume.json out.docx`, 
 same gates, with `check` but without `--orig`.
 
 **Demo:** `docproof demo --out /tmp/docproof-demo` builds the fictional example CV, renders,
-checks, verifies and matches it end to end. Run it once after install to confirm Chrome and the
+checks, verifies, story-checks and matches it, reports coverage, and checks the example cover
+letter and LinkedIn About end to end. Run it once after install to confirm Chrome and the
 fonts work.
 
 ## The gates
@@ -68,9 +74,11 @@ fonts work.
 | `docproof verify` | every number in the document appears in the fact base and no `## Known gaps` term appears (hard fail); skills-row items not backed by the fact base are WARNs. Tools named inside bullets are not machine-checked — that is the claim-auditor's job | remove or reword the claim; never add the claim to the fact base to make it pass unless the user confirms it's true |
 | `docproof story --ad` | the summary's role matches the title (hard fail); title phrases proven in the body, figures in the summary keep their body scope, no duty re-typed from the ad (lines in the fact base's own wording are exempt with `--facts`), every bullet linked to the ad (WARNs) | fix, or keep a WARN with a one-line reason in the delivery |
 | `docproof check` | real .docx; header identical to `--orig` (title line excepted); every word in the PDF; page starts at a heading; no one-word widows; every link listed (open them yourself); no job-search framing | fix every FAIL; fix each WARN or state in the delivery why it's acceptable |
-| PNGs looked at | you opened each page image and found nothing wrong | fix, re-run both gates |
+| `docproof coverage` | reports, never fails: every **closable** requirement closed or consciously left out; **open** ones left open | close from the fact base, or say why not |
+| `docproof prose` (letters, profiles) | no figure outside the fact base, no known gap claimed, within the platform limit (hard fail); stock phrases, "not X but Y", echo, fit, length (WARNs) | fix, or keep a WARN with a one-line reason |
+| PNGs looked at | you opened each page image and found nothing wrong | fix, re-run the gates |
 
-Nothing is delivered until all three pass.
+Nothing is delivered until the gates pass.
 
 ## The CLI at a glance
 
@@ -88,6 +96,9 @@ Nothing is delivered until all three pass.
 | `check` | the layout and integrity gate above | — |
 | `verify` | the claim-tracing gate above | — |
 | `match` | requirement → evidence map, coverage %, gap list | decide go/no-go for you; it's input to your judgment |
+| `coverage` | requirement → shown / partly / closable / open in the document; coverage now → reachable; mirror terms | a reason to write a term the candidate can't back |
+| `prose` | fact and style gate for letters, emails, LinkedIn headline/About, bios, pitches (`.md`, `.txt`, `.docx`) | — |
+| `prompt write` | paste-ready prompt to draft a letter/About/bio/pitch with any assistant | — |
 | `lint` | flags stale phrases in skill/agent files against a rules file | — |
 
 Example `ops.json` (works on the fictional example built from `examples/resume.json`):

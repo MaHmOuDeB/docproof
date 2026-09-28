@@ -33,7 +33,7 @@ Needs Python ≥ 3.9 and Google Chrome or Chromium (for PDF rendering). Poppler 
 git clone https://github.com/MaHmOuDeB/docproof && cd docproof
 pip install -e .                 # installs the `docproof` command (no runtime dependencies)
 docproof doctor                  # checks Chrome, poppler and fonts
-docproof demo                    # build → check → verify → story → match on the fictional example
+docproof demo                    # build → check → verify → story → match → coverage → prose on the fictional example
 docproof init ~/career           # your own private workspace: profile/fact-base.md + resume.json
 ```
 
@@ -49,11 +49,13 @@ poppler, `pip install -e ".[pdf]"` gives a pypdf fallback for text checks (no PN
 | `docproof check doc.docx [--orig base.docx] --png dir/` | Full gate: real .docx, protected header unchanged, every word in the PDF, page starts, widows, links, "tailored-for-the-ad" phrasing |
 | `docproof verify doc.docx --facts fact-base.md` | Every figure must appear in the fact base; no "known gap" may be claimed; skills rows are cross-checked |
 | `docproof story doc.docx --ad job-ad.txt --facts fact-base.md` | One story: the summary's role matches the title, every title phrase is proven in the body, repeated figures keep their scope, no line re-types the ad, every bullet serves the ad |
+| `docproof coverage job-ad.txt --doc cv.docx --facts fact-base.md` | The ATS view: which requirements the document shows, which the fact base could add, which stay open; coverage now → reachable |
+| `docproof prose letter.md --kind letter --facts … --ad …` | Cover letters, application emails, LinkedIn headline/About, bios, pitches: figures and known gaps (FAIL), platform limits, stock phrases, "not X but Y", echo, fit |
 | `docproof match job-ad.txt --facts fact-base.md` | Requirement → evidence map with a coverage score (≥70% genuine, 50–70% honest middle, <50% stretch) and the gaps |
 | `docproof dump / edit / keywords / reorder` | Safe edits: every change is proven to touch only its target |
 | `docproof add-entry / add-link / add-summary / set-metadata` | Structural additions that clone the document's own formatting |
 | `docproof lint paths… --rules rules.json` | Catch stale facts and rules in your own prompt/skill files |
-| `docproof prompt tailor\|audit\|review …` | Paste-ready prompt for ChatGPT, Gemini or any LLM, with all the context |
+| `docproof prompt tailor\|audit\|review\|write …` | Paste-ready prompt for ChatGPT, Gemini or any LLM, with all the context (`write` drafts a letter, About, bio or pitch) |
 | `docproof apply in.docx reply.json out.docx --facts … --ad …` | Apply an LLM's JSON answer safely, then run `story` and `verify` on it |
 | `docproof init [DIR]` | Create a private workspace with fact-base and résumé templates |
 
@@ -88,6 +90,41 @@ WARN relevance 'Built a churn-prediction model …' proves nothing the ad asks f
 `echo` flags a line that re-types one of the ad's duties; with `--facts`, a line in the fact base's
 own wording is never flagged (matching the ad because you really did it is the point). Each WARN
 is either fixed or kept with a one-line reason; the agents also run a fresh-eyes review and re-score.
+
+### What `coverage` shows
+
+`match` asks whether you fit the ad; `coverage` asks whether your document shows it, and how far
+it can honestly go:
+
+```text
+$ docproof coverage ad.txt --doc Jordan_Rivera_CV.docx --facts profile/fact-base.md
+✓ shown    Partner with engineering on event tracking and data quality
++ closable Present insights to product leadership
+      ↳ fact base: Presented monthly experiment reviews to product leadership.
+✗ open     Experience with GA4 and Braze
+      ↳ known gap: GA4, Braze — leave it open
+coverage now 79% of 12 must-haves → reachable 88% from the fact base (the rest are open gaps)
+ad terms the fact base backs but the document never uses: leadership, present
+```
+
+Above "reachable", only invention would help, and Docproof never invents.
+
+### Cover letters, LinkedIn, bios and pitches
+
+The same fact base drives the prose around the CV. `docproof prompt write --kind letter|about|…`
+gives any assistant the rules; `docproof prose` checks the result:
+
+```text
+$ docproof prose letter.md --kind letter --facts profile/fact-base.md --ad ad.txt
+FAIL numbers   '60+' is not in the fact base: …I designed and analysed 60+ A/B tests and built GA4…
+FAIL gaps      claims the known gap 'GA4': I designed and analysed 60+ A/B tests and built GA4 dashboards.
+WARN phrases   stock phrase 'dear sir or madam'
+WARN contrast  'It's not just about numbers, it's…'
+WARN openers   86% of sentences start with 'I'
+```
+
+Saying plainly that a known gap is a gap ("GA4 I haven't used in production") passes. Examples:
+[`examples/documents/`](examples/documents/).
 
 ### What `match` shows
 
@@ -128,11 +165,12 @@ If the model invents a number or claims a known gap, `apply` fails the verificat
 
 | | Role |
 |---|---|
-| `doc-craft` skill | How CVs are read, section-by-section rules, bullet writing, honest tailoring, layout rules, English and German conventions, review modes |
+| `doc-craft` skill | How CVs are read, section-by-section rules, bullet writing, honest tailoring, requirement coverage and how ATS really work, layout rules, English and German conventions, cover letters, LinkedIn/bio/pitch writing, review modes |
 | `document-tailor` agent | Go/no-go with `match`, tailors section by section through the CLI, and cannot finish until `verify`, `story` and `check` pass, the PNGs have been looked at and a fresh-eyes review has been applied and re-scored |
 | `claim-auditor` agent | Independent line-by-line claim audit against the fact base (numbers, tools, "led" vs "supported"); never edits |
 | `fresh-eyes-reviewer` agent | Reviews with **no** access to the fact base, as a named persona (recruiter, hiring manager…); run 2–3 in parallel |
 | `/tailor <job ad>` | Runs author → auditor → reviewer and triages the findings |
+| `/letter [kind] <job ad>` | Cover letter, application email, LinkedIn headline/About, bio or pitch: drafted from the fact base, checked with `prose`, critiqued once, revised |
 
 See [`claude/README.md`](claude/README.md) and [`docs/architecture.md`](docs/architecture.md).
 

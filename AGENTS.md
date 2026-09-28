@@ -26,14 +26,24 @@ docproof keywords applications/<co>/work.docx applications/<co>/<First_Last>_CV.
 docproof verify applications/<co>/<First_Last>_CV.docx --facts profile/fact-base.md
 docproof story  applications/<co>/<First_Last>_CV.docx --ad ad.txt --facts profile/fact-base.md  # one story: title ↔ summary, scope, echo, relevance
 docproof check  applications/<co>/<First_Last>_CV.docx --orig profile/base.docx --png applications/<co>/png
+docproof coverage ad.txt --doc applications/<co>/<First_Last>_CV.docx --facts profile/fact-base.md  # shown / closable / open
 ```
-Then open every PNG. Report: the verdict, the honest gaps, every changed line (before → after),
-and the gate results.
+Then open every PNG. Report: the verdict, coverage before → after (and the reachable ceiling), the
+honest gaps, every changed line (before → after), and the gate results.
+
+## Cover letters, LinkedIn About, bios, pitches (only when asked)
+```bash
+docproof prompt write --facts profile/fact-base.md --kind letter --ad ad.txt   # or draft it yourself
+docproof prose applications/<co>/Cover_Letter_<First_Last>.md --kind letter --facts profile/fact-base.md --ad ad.txt
+```
+Kinds: `letter`, `email`, `about`, `headline`, `bio`, `pitch`. Zero FAIL (figures, known gaps, platform
+limits); fix or justify each WARN (stock phrases, "not X but Y", echo, fit, length). Rules:
+`claude/skills/doc-craft/references/cover-letters.md` and `profiles-and-pitches.md`.
 
 ## Deeper guidance
 The full writing and layout rules live in `claude/skills/doc-craft/` (plain Markdown, usable by any
 agent): `references/section-by-section.md`, `bullet-writing.md`, `jd-tailoring.md`,
-`format-and-ats.md`, `pipeline.md`. The review roles are in `claude/agents/` — an independent
+`format-and-ats.md`, `requirement-coverage.md`, `cover-letters.md`, `profiles-and-pitches.md`, `pipeline.md`. The review roles are in `claude/agents/` — an independent
 claim auditor and a context-free reviewer are worth running as separate passes.
 
 ## Development

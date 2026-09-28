@@ -11,6 +11,9 @@ Verify against the facts
   verify       <doc.docx> --facts fact-base.md       every figure traces to the fact base; no known gap claimed
   match        <job-ad.txt> --facts fact-base.md     requirement → evidence map, coverage %, gaps
   story        <doc.docx> [--ad ad] [--facts f]      one story: title ↔ summary, taglines, figure scope, echo, relevance
+  coverage     <job-ad.txt> --doc d [--facts f]      requirements the document shows / could show / can't (ATS view)
+  prose        <doc.md|.docx> --kind K [--facts f] [--ad a]  cover letter, About, headline, bio, pitch: figures,
+                                                    gaps, length, stock phrases, echo, fit
 
 Edit safely (every command proves that only the intended part changed)
   dump         <doc.docx> [--runs]                   list paragraphs — always dump before writing ops
@@ -24,7 +27,7 @@ Edit safely (every command proves that only the intended part changed)
   text | inspect | header-diff                        plain text / sanity check / header byte-identity
 
 Use any AI assistant (ChatGPT, Gemini, Claude, …)
-  prompt       tailor|audit|review --facts … --ad … --doc …   ready-to-paste prompt with all context
+  prompt       tailor|audit|review|write --facts … --ad … --doc …   ready-to-paste prompt with all context
   apply        <in.docx> <reply.json> <out.docx> [--facts f] [--ad a]  apply the model's JSON reply, then story + verify
 
 Get started
@@ -33,7 +36,7 @@ Get started
 Maintenance
   lint         <paths…> --rules rules.json          stale-phrase linter for your own skill files
   doctor                                            check Chrome, poppler and fonts
-  demo         [--out DIR]                          build → check → verify → story → match on the example
+  demo         [--out DIR]                          build → check → verify → story → match → coverage → prose
 """
 import importlib
 import os
@@ -50,6 +53,8 @@ COMMANDS = {
     "verify": ("verify", "main", []),
     "match": ("match", "main", []),
     "story": ("story", "main", []),
+    "coverage": ("coverage", "main", []),
+    "prose": ("prose", "main", []),
     "dump": ("edit", "run", ["dump"]),
     "edit": ("edit", "run", ["apply"]),
     "text": ("edit", "run", ["text"]),
@@ -121,6 +126,13 @@ def demo(argv):
                    "--facts", str(ex / "profile" / "fact-base.md")]),
         ("match", dp + ["match", str(ex / "jobs" / "experimentation-analyst.txt"),
                         "--facts", str(ex / "profile" / "fact-base.md")]),
+        ("coverage", dp + ["coverage", str(ex / "jobs" / "experimentation-analyst.txt"), "--doc", str(docx),
+                           "--facts", str(ex / "profile" / "fact-base.md")]),
+        ("prose (cover letter)", dp + ["prose", str(ex / "documents" / "cover-letter.md"), "--kind", "letter",
+                                       "--facts", str(ex / "profile" / "fact-base.md"),
+                                       "--ad", str(ex / "jobs" / "experimentation-analyst.txt")]),
+        ("prose (LinkedIn About)", dp + ["prose", str(ex / "documents" / "linkedin-about.md"), "--kind", "about",
+                                         "--facts", str(ex / "profile" / "fact-base.md")]),
     ]
     failed = []
     for name, cmd in steps:

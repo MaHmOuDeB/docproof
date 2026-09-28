@@ -1,6 +1,6 @@
 ---
 name: doc-craft
-description: Write, review and tailor fact-grounded documents, with the résumé/CV as the reference case. Covers how CVs are read (ATS parse, 6–10 second scan, detailed read), section-by-section rules (title line, summary, skills, experience, projects, education, languages), bullet formulas, vocabulary (filler and AI-tell words), honest job-ad tailoring, ATS-safe layout, English and German (Lebenslauf) conventions, eight review modes, and the docproof CLI that builds, edits, renders and verifies the .docx/PDF. Every fact comes from the user's fact base. Use whenever the user asks to write, review, critique, shorten, rewrite or tailor a CV, résumé, Lebenslauf, cover letter or any CV section ("fix my summary", "is this bullet strong", "review my CV like a recruiter", "tailor this to the job ad"), or to check a document's claims against their facts, even if they don't name this skill.
+description: Write, review and tailor fact-grounded documents, with the résumé/CV as the reference case. Covers how CVs are read (ATS parse, 6–10 second scan, detailed read), section-by-section rules (title line, summary, skills, experience, projects, education, languages), bullet formulas, vocabulary (filler and AI-tell words), honest job-ad tailoring, requirement coverage and how applicant tracking systems really work, ATS-safe layout, English and German (Lebenslauf) conventions, eight review modes, cover letters and application emails, LinkedIn headlines and About sections, bios and elevator pitches, and the docproof CLI that builds, edits, renders and verifies them. Every fact comes from the user's fact base. Use whenever the user asks to write, review, critique, shorten, rewrite or tailor a CV, résumé, Lebenslauf, cover letter, Anschreiben, LinkedIn profile, bio or pitch ("fix my summary", "is this bullet strong", "review my CV like a recruiter", "tailor this to the job ad", "match score", "ATS check", "write my LinkedIn About"), or to check a document's claims against their facts, even if they don't name this skill.
 ---
 
 # doc-craft
@@ -53,6 +53,9 @@ disagree, the more specific rule wins (a German-CV rule beats a general CV rule 
 | "Review my CV", "rewrite", "ATS boost", "hook", cover letter: the 8 modes | `references/review-modes.md` |
 | English CV conventions | `references/cv-rules-en.md` |
 | German Lebenslauf conventions (override the English ones) | `references/cv-rules-de.md` |
+| Match score, ATS, "close the gaps", which document language | `references/requirement-coverage.md` |
+| Cover letter, Anschreiben, application email, unsolicited application | `references/cover-letters.md` |
+| LinkedIn headline and About, bio, elevator pitch, positioning | `references/profiles-and-pitches.md` |
 | **Touching a file**: build, edit, render, check, verify, naming, backups | `references/pipeline.md` |
 
 ## The CLI (details and order in `references/pipeline.md`)
@@ -69,6 +72,9 @@ disagree, the more specific rule wins (a German-CV rule beats a general CV rule 
 | `docproof check <in.docx> [--orig base.docx] --png <dir>` | Layout and integrity gate |
 | `docproof verify <in.docx> --facts <fact-base.md>` | Claim tracing gate |
 | `docproof story <in.docx> [--ad <job-ad.txt>] [--facts <fact-base.md>]` | One-story gate: title ↔ summary, title phrases proven, figure scope, echo (fact-base wording is never flagged), relevance |
+| `docproof coverage <job-ad.txt> --doc <doc> [--facts <fact-base.md>]` | What the document shows, what the fact base could add (closable), what stays open; coverage now → reachable |
+| `docproof prose <doc.md> --kind letter\|email\|about\|headline\|bio\|pitch --facts … [--ad …]` | Prose gate: figures and known gaps (FAIL), length, stock phrases, "not X but Y", echo, fit |
+| `docproof prompt write --facts … --kind …` | Paste-ready prompt to draft a letter, About, bio or pitch with any assistant |
 | `docproof lint <paths…> --rules rules.json` | Stale-phrase linter for skill and agent files |
 | `docproof demo` | End-to-end run on the fictional example |
 
@@ -79,6 +85,8 @@ disagree, the more specific rule wins (a German-CV rule beats a general CV rule 
 - `claim-auditor`: independent line-by-line claim audit against the fact base. Never edits.
 - `fresh-eyes-reviewer`: context-free persona review (no fact base, no memory).
 - `/tailor <job ad>`: runs the three in sequence and summarises the verdicts.
+- `/letter <job ad or kind>`: a cover letter, application email, LinkedIn About/headline, bio or
+  pitch from the fact base, checked with `prose`, critiqued once and revised.
 
 ## Default behaviour
 
@@ -99,7 +107,8 @@ disagree, the more specific rule wins (a German-CV rule beats a general CV rule 
 - **Language decides the ruleset.** English CV: these references plus `cv-rules-en.md`. German
   Lebenslauf: `cv-rules-de.md` overrides (Nominalstil, Kurzprofil, no periods, `MM/JJJJ`).
 - **Look at the output.** No file is finished until `docproof check` and `docproof verify` pass
-  and the rendered PNGs have been opened and looked at, page by page.
+  and the rendered PNGs have been opened and looked at, page by page. Prose documents (letters,
+  About sections, bios, pitches) are finished when `docproof prose` has no FAIL.
 
 ## Never
 

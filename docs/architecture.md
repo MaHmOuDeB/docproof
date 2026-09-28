@@ -16,14 +16,18 @@ flowchart LR
     subgraph CLI [docproof CLI]
         M[match<br/>requirement → evidence]
         E[dump / edit / keywords /<br/>reorder / add-*]
-        V[verify<br/>figures + known gaps]
+        V[verify + story<br/>figures, known gaps, one story]
         C[check + render<br/>PDF, pages, widows, links]
+        CV[coverage<br/>shown / closable / open]
+        P[prose<br/>letters, About, bios, pitches]
     end
     AD --> M
     FB --> M
     M --> T
-    T --> E --> V --> C
+    T --> E --> V --> C --> CV
     FB --> V
+    FB --> P
+    T -->|letter / About, when asked| P
     C -->|PDF + PNGs| A
     C -->|PDF only| R
     FB --> A
@@ -40,6 +44,9 @@ flowchart LR
 | Header | `header-diff` | anything in the protected header changed except the title line |
 | Every edit | `edit`, `keywords`, `reorder`, `add-*` | the change touches more than its target (each tool diffs before/after) |
 | Truth | `verify` | a figure isn't in the fact base, or a known gap is claimed |
+| One story | `story` | the summary's role contradicts the title (FAIL); unproven title phrases, figures out of scope, lines echoing the ad, bullets that serve nothing (WARN) |
+| Coverage | `coverage` | reports; never fails: requirements shown, closable from the fact base, or open |
+| Prose | `prose` | a letter/About/bio/pitch has a figure not in the fact base, claims a known gap or exceeds a platform limit (FAIL); stock phrases, "not X but Y", echo, weak fit (WARN) |
 | Rendering | `render` | a word of the .docx is missing from the PDF text |
 | Layout | `check` | a page starts mid-entry, a bullet ends on one word, "tailored" phrasing appears (WARN) |
 | Eyes | the agent | nobody looked at the PNGs |
@@ -49,7 +56,8 @@ flowchart LR
 The same loop works with any assistant: `docproof prompt tailor` packs the fact base, the ad, the
 `match` report and the document into one prompt that asks for a JSON list of edit operations;
 `docproof apply` runs them through the same safe editors and then `verify`. `prompt audit` and
-`prompt review` recreate the auditor and the fresh-eyes reviewer as paste-ready prompts. Coding
+`prompt review` recreate the auditor and the fresh-eyes reviewer as paste-ready prompts, and
+`prompt write` drafts a cover letter, About section, bio or pitch for `prose` to check. Coding
 agents (Codex CLI, Gemini CLI, Cursor) get their instructions from `AGENTS.md`.
 
 ## Why the agents are separate

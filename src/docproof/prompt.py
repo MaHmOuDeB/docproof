@@ -3,6 +3,11 @@
   docproof prompt tailor --facts fact-base.md --ad job-ad.txt --doc base.docx [--out prompt.txt]
   docproof prompt audit  --facts fact-base.md --doc tailored.docx
   docproof prompt review --doc tailored.docx [--ad job-ad.txt] [--persona "hiring manager"]
+  docproof prompt write  --facts fact-base.md --kind letter|email|about|headline|bio|pitch
+                         [--ad job-ad.txt] [--notes company-notes.txt]
+
+`write` asks for a cover letter, LinkedIn About/headline, bio or pitch; save the answer as a .md
+file and check it with `docproof prose <file.md> --kind … --facts … [--ad …]`.
 
 The prompt bundles the fact base, the job ad, the `match` report and the document text with the
 house rules, and asks the model for a machine-readable answer. For `tailor`, save the model's JSON
@@ -65,10 +70,38 @@ def build_prompt(kind, opt):
         return tpl.format(persona=opt.get("--persona", "senior tech recruiter"), doc=doc_lines(opt["--doc"]),
                           ad_clause=", for the job ad below" if ad else "",
                           ad_block=f"\n=== JOB AD ===\n{Path(ad).read_text(encoding='utf-8')}\n" if ad else "")
+    if kind == "write":
+        k = opt["--kind"]
+        ad, notes = opt.get("--ad"), opt.get("--notes")
+        return tpl.format(
+            kind_label=WRITE_KINDS[k][0], length=WRITE_KINDS[k][1], kind_rules=WRITE_KINDS[k][2],
+            facts=Path(opt["--facts"]).read_text(encoding="utf-8"),
+            ad_clause=", for the job ad below" if ad else "",
+            ad_block=f"\n=== JOB AD ===\n{Path(ad).read_text(encoding='utf-8')}\n" if ad else "",
+            notes_block=(f"\n=== NOTES ON THE EMPLOYER (from their own site) ===\n"
+                         f"{Path(notes).read_text(encoding='utf-8')}\n" if notes else ""))
     raise KeyError(kind)
 
 
-NEEDS = {"tailor": ("--facts", "--ad", "--doc"), "audit": ("--facts", "--doc"), "review": ("--doc",)}
+# kind → (label, length, extra rules)
+WRITE_KINDS = {
+    "letter": ("cover letter", "150–400 words, one page",
+               "7. Structure: why this role (tied to something specific the employer said) → the evidence chains →\n"
+               "   how the candidate works → a short, friendly close. Address a named person if one is known.\n"),
+    "email": ("short application email (the letter and CV are attached)", "4–8 sentences, under 150 words",
+              "7. Don't repeat the letter; give the reader one reason to open the attachments.\n"),
+    "about": ("LinkedIn About section", "under 2,600 characters; the first two lines must work on their own",
+              "7. Open with what the candidate does and one result — no \"I am a …-driven professional\".\n"
+              "   Close with what they are looking for.\n"),
+    "headline": ("LinkedIn headline", "under 220 characters",
+                 "7. Role first, then 2–3 search terms recruiters use, then one proof point. Pipes as separators.\n"),
+    "bio": ("short professional bio in the third person", "40–200 words", ""),
+    "pitch": ("spoken elevator pitch", "under 90 words (about 30 seconds)",
+              "7. Who they are → one thing they built or proved → what they're looking for now. Spoken rhythm.\n"),
+}
+
+NEEDS = {"tailor": ("--facts", "--ad", "--doc"), "audit": ("--facts", "--doc"), "review": ("--doc",),
+         "write": ("--facts", "--kind")}
 
 
 def main(argv=None):
@@ -78,6 +111,8 @@ def main(argv=None):
     kind, rest = a[0], a[1:]
     opt = {rest[i]: rest[i + 1] for i in range(0, len(rest) - 1) if rest[i].startswith("--")}
     missing = [k for k in NEEDS[kind] if k not in opt]
+    if kind == "write" and opt.get("--kind", "letter") not in WRITE_KINDS:
+        sys.exit(f"docproof prompt write: --kind must be one of {', '.join(WRITE_KINDS)}")
     if missing:
         sys.exit(f"docproof prompt {kind}: missing {', '.join(missing)}\n\n{__doc__}")
     text = build_prompt(kind, opt)

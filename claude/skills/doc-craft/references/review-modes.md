@@ -58,8 +58,9 @@ use scope or adoption framing, or ask. "Sound compelling" is subordinate to "sta
 **Do:**
 1. Structure check first (parse layer): one column, no tables or graphics in the body, standard
    headings, nothing critical in page headers/footers (`format-and-ats.md`).
-2. Keyword layer: `docproof match <ad> --facts <fact base>`, then `jd-tailoring.md` Steps 1–4.
-   Mirror exact phrases where true, once, in high-weight positions.
+2. Keyword layer: `docproof coverage <ad> --doc <cv> --facts <fact base>` (`requirement-coverage.md`):
+   close each **closable** requirement, leave **open** ones open, use the listed mirror terms only
+   where true, once, in high-weight positions. Report coverage before → after and the reachable ceiling.
 
 **Guardrail:** never stuff; never add a tool the candidate hasn't used. If silence after applying
 is worrying the user, remind them the "75% auto-rejected" figure is a myth.
@@ -134,30 +135,7 @@ keyword.
 **Trigger:** "write a cover letter", "Anschreiben", "motivation letter". Only when the user asks;
 a tailored CV does not imply a letter.
 
-**Process:** draft → explicit recruiter critique against this posting → revise → AI-phrase pass
-(`vocabulary.md`) → read it once more for voice.
-
-**Structure** (one job per paragraph):
-1. Reason for applying, tied to this posting's own language
-2. Education and relevant experience
-3. Evidence of fit: 1–2 chains of **requirement → candidate's experience → benefit for the
-   employer**, with numbers from the fact base
-4. Working style
-5. Short, friendly close
-
-**Rules:**
-- Show fit, never assert it. "My experience perfectly matches" is out; a concrete chain is in.
-- Core gap → forward reframe ("ready to go deep on X, building on strong Y fundamentals").
-  Secondary gap → brief honest mention, or leave it out.
-- Name a person if one is findable; no generic "Dear Hiring Manager" when a name exists.
-- Salary only if the posting explicitly asks for it in the letter.
-- Write in a language the candidate can also interview in. A polished letter in a language they
-  can't hold a conversation in reads as misleading.
-- Email applications: a 4–6 sentence email plus the letter as an attachment; don't duplicate.
-
-**Length:** full letter ~250–350 words, 4–5 short paragraphs. A **short variant** under 200
-words for email bodies, messages or character-limited form fields.
-
-**Guardrail:** "enthusiastic" becomes **specific and warm**: enthusiasm shows through precise
-knowledge of the product and a concrete fit. Run `docproof verify`-style scrutiny on the letter's
-claims too: every number must be in the fact base.
+**Do:** follow `cover-letters.md` (the owner of every cover-letter rule): two requirement →
+evidence → benefit chains, draft → `docproof prose --kind letter --facts … --ad …` → recruiter
+critique → revise → `prose` again. `--kind email` for an email body or a character-limited field.
+For LinkedIn headlines, About sections, bios and pitches, see `profiles-and-pitches.md`.

@@ -34,7 +34,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from docproof.facts import tokens
+from docproof.facts import stem, tokens
 from docproof.headings import SUMMARY_KEYS
 
 ROLE_NOUNS = {
@@ -95,8 +95,53 @@ GENERIC = {"build", "use", "work", "team", "data", "new", "make", "help", "manag
 EVIDENCE_SECTIONS = {"PROFESSIONAL EXPERIENCE", "EXPERIENCE", "PROJECTS", "BERUFSERFAHRUNG", "PROJEKTE"}
 
 
+def _words(text: str) -> List[str]:
+    """Every word, stemmed, stop words included — for comparing wording rather than content."""
+    return [stem(w) for w in re.findall(r"[a-zäöüß0-9]+", text.lower())] or [""]
+
+
 def _sentences(text: str) -> List[str]:
     return [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", text) if s.strip()]
+
+
+def echoes(lines: List[str], ad_text: str, facts_text: Optional[str] = None) -> List[str]:
+    """Lines that repeat one of the ad's duties — the same words in the same order.
+
+    Sharing key terms with the ad is expected (and good); re-typing its sentence is not. A line that
+    follows the fact base's own wording is never an echo: the candidate really did that.
+    """
+    ad_seqs = [_content(s) for s in _sentences(ad_text) if len(_content(s)) >= 3]
+    # the ad's individual duties/requirements (one sentence often lists several, split by ; or •)
+    ad_units = [u for u in (_content(x) for x in re.split(r"[.;:\n•]|\s[-–]\s", ad_text)) if len(set(u)) >= 5]
+    # fact-base items (a bullet may wrap over several lines)
+    items = re.split(r"\n\s*(?:[-*•]|\d+\.)\s+|\n\s*\n|\n#+\s", "\n" + (facts_text or ""))
+    fact_lines = [_content(x) for x in items if len(_content(x)) >= 4]
+    fact_words = [_words(x) for x in items if len(_content(x)) >= 4]
+    ad_words = [_words(x) for x in re.split(r"[.;:\n•]|\s[-–]\s", ad_text) if len(_content(x)) >= 3]
+    hits = []
+    for b in lines:
+        full = _content(b)
+        if not full:
+            continue
+        hit = any(_lcs(full, u) / len(u) >= 0.65 for u in ad_units)
+        if not hit:
+            for clause in CLAUSE_SPLIT.split(b):
+                seq = _content(clause)
+                if len(set(seq)) >= 5 and any(
+                    len(set(seq) & set(a)) / len(set(seq)) >= 0.8 and _lcs(seq, a) / len(seq) >= 0.75
+                    for a in ad_seqs
+                ):
+                    hit = True
+                    break
+        if hit and fact_lines and any(_lcs(full, f) / len(full) >= 0.7 for f in fact_lines):
+            # the same facts as the fact base: an echo only if the wording is closer to the ad's
+            w = _words(b)
+            to_fact = max(_lcs(w, f) for f in fact_words) / len(w)
+            to_ad = max((_lcs(w, x) for x in ad_words), default=0) / len(w)
+            hit = to_ad > to_fact
+        if hit:
+            hits.append(b)
+    return hits
 
 
 def analyse(docx: str, ad_text: Optional[str] = None, facts_text: Optional[str] = None) -> Dict[str, list]:
@@ -184,38 +229,16 @@ def analyse(docx: str, ad_text: Optional[str] = None, facts_text: Optional[str] 
                 })
 
     if ad_text:
-        ad_seqs = [_content(s) for s in _sentences(ad_text) if len(_content(s)) >= 3]
-        ad_sents = [set(x) for x in ad_seqs]
-        # the ad's individual duties/requirements (one sentence often lists several, split by ; or •)
-        ad_units = [u for u in (_content(x) for x in re.split(r"[.;:\n•]|\s[-–]\s", ad_text)) if len(set(u)) >= 5]
-        # echo: a line that repeats one of the ad's duties — the same words in the same order.
-        # Sharing key terms with the ad is expected (and good); re-typing its sentence is not.
-        # fact-base items (a bullet may wrap over several lines)
-        items = re.split(r"\n\s*(?:[-*•]|\d+\.)\s+|\n\s*\n|\n#+\s", "\n" + (facts_text or ""))
-        fact_lines = [_content(x) for x in items if len(_content(x)) >= 4]
-        for b in bullets + _sentences(summary):
-            full = _content(b)
-            if full and any(_lcs(full, f) / len(full) >= 0.7 for f in fact_lines):
-                continue  # the candidate's own fact-base wording, not a copy of the ad
-            hit = any(_lcs(full, u) / len(u) >= 0.65 for u in ad_units)
-            if not hit:
-                for clause in CLAUSE_SPLIT.split(b):
-                    seq = _content(clause)
-                    if len(set(seq)) >= 5 and any(
-                        len(set(seq) & set(a)) / len(set(seq)) >= 0.8 and _lcs(seq, a) / len(seq) >= 0.75
-                        for a in ad_seqs
-                    ):
-                        hit = True
-                        break
-            if hit:
-                out["warn"].append({
-                    "check": "echo",
-                    "message": f"'{b[:90]}' repeats the ad's own wording",
-                    "fix": "name the concrete thing that was done; mirror single key terms, not sentences",
-                })
+        for b in echoes(bullets + _sentences(summary), ad_text, facts_text):
+            out["warn"].append({
+                "check": "echo",
+                "message": f"'{b[:90]}' repeats the ad's own wording",
+                "fix": "name the concrete thing that was done; mirror single key terms, not sentences",
+            })
         # relevance: a bullet that shares nothing with any requirement
         from docproof.match import requirements
 
+        ad_sents = [set(_content(s)) for s in _sentences(ad_text) if len(_content(s)) >= 3]
         reqs = [set(_content(r)) for r, _ in requirements(ad_text)] + ad_sents
         emphasised = {t for t, n in Counter(_content(ad_text)).items() if n >= 2} - GENERIC
         for b in bullets:

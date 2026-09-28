@@ -310,3 +310,86 @@ class TestStory(unittest.TestCase):
             r = self.story(bad, "--ad", AD)
             self.assertTrue(any(f["check"] == "echo" and "event tracking" in f["message"] for f in r["warn"]))
             self.assertTrue(any(f["check"] == "relevance" and "CNC" in f["message"] for f in r["warn"]))
+
+
+LETTER = EX / "documents" / "cover-letter.md"
+ABOUT = EX / "documents" / "linkedin-about.md"
+
+
+class TestProse(unittest.TestCase):
+    """Cover letters, About sections, bios and pitches: the same facts, checked as prose."""
+
+    def prose(self, path, kind, *extra):
+        r = dp("prose", path, "--kind", kind, "--json", *extra, check=False)
+        return json.loads(r.stdout), r.returncode
+
+    def checks(self, r, level):
+        return {f["check"] for f in r[level]}
+
+    def test_examples_pass(self):
+        r, code = self.prose(LETTER, "letter", "--facts", FACTS, "--ad", AD)
+        self.assertEqual((r["fail"], r["warn"], code), ([], [], 0))
+        r, code = self.prose(ABOUT, "about", "--facts", FACTS)
+        self.assertEqual((r["fail"], r["warn"], code), ([], [], 0))
+
+    def test_invented_number_and_claimed_gap_fail(self):
+        with Workdir() as w:
+            text = LETTER.read_text().replace("40+ A/B tests", "60+ A/B tests").replace(
+                "Two tools in your list, GA4 and Braze, I have not used in production;",
+                "I also built GA4 dashboards;")
+            w.p("l.md").write_text(text)
+            r, code = self.prose(w.p("l.md"), "letter", "--facts", FACTS)
+            self.assertEqual(code, 1)
+            self.assertEqual(self.checks(r, "fail"), {"numbers", "gaps"})
+            self.assertIn("60+", r["fail"][0]["message"])
+
+    def test_disclosed_gap_is_not_a_claim(self):
+        r, _ = self.prose(LETTER, "letter", "--facts", FACTS)
+        self.assertNotIn("gaps", self.checks(r, "fail"))  # "GA4 and Braze, I have not used"
+
+    def test_stock_phrases_contrast_openers_repeat_and_echo(self):
+        with Workdir() as w:
+            w.p("bad.md").write_text(
+                "Dear Sir or Madam,\n\n"
+                "I am writing to apply for this role. I am passionate about data. I am a results-driven team player. "
+                "I believe I am the perfect fit.\n\n"
+                "I designed and analysed 40+ A/B tests. I analysed experiment results and wrote clear ship/no-ship "
+                "recommendations. It's not just about numbers, it's about people.\n\n"
+                "I am a results-driven team player who is passionate about data and a perfect fit for this role.\n\n"
+                "Kind regards,\nJordan")
+            r, code = self.prose(w.p("bad.md"), "letter", "--facts", FACTS, "--ad", AD)
+            self.assertEqual(code, 0)  # warnings only
+            self.assertTrue({"phrases", "contrast", "openers", "repeat", "echo", "length"} <= self.checks(r, "warn"))
+            _, strict = self.prose(w.p("bad.md"), "letter", "--facts", FACTS, "--strict")
+            self.assertEqual(strict, 1)
+
+    def test_platform_limit_is_a_hard_fail(self):
+        with Workdir() as w:
+            w.p("h.txt").write_text("Product Analyst | " + "A/B Testing, dbt, SQL | " * 12)
+            r, code = self.prose(w.p("h.txt"), "headline")
+            self.assertEqual((self.checks(r, "fail"), code), ({"length"}, 1))
+
+
+class TestCoverage(unittest.TestCase):
+    def test_shown_closable_and_open(self):
+        with Workdir() as w:
+            r = json.loads(dp("coverage", AD, "--doc", w.cv, "--facts", FACTS, "--json").stdout)
+            status = {row["requirement"]: row["status"] for row in r["requirements"]}
+            self.assertEqual(status["Design A/B tests with product managers, including power analysis and success metrics"],
+                             "shown")
+            self.assertEqual(status["Present insights to product leadership"], "closable")
+            self.assertEqual(status["Experience with GA4 and Braze"], "open")
+            self.assertGreater(r["reachable"], r["coverage_now"])
+            self.assertIn("leadership", r["mirror_terms"])
+
+    def test_without_facts_only_reports_the_document(self):
+        with Workdir() as w:
+            r = json.loads(dp("coverage", AD, "--doc", w.cv, "--json").stdout)
+            self.assertIsNone(r["reachable"])
+            self.assertNotIn("closable", {row["status"] for row in r["requirements"]})
+
+    def test_write_prompt_carries_the_rules(self):
+        out = dp("prompt", "write", "--facts", FACTS, "--kind", "letter", "--ad", AD).stdout
+        self.assertIn("Known gaps", out)
+        self.assertIn("150–400 words", out)
+        self.assertIn("Brightleaf", out)

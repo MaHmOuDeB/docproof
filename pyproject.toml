@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docproof"
-version = "0.2.0"
+version = "0.3.0"
 description = "Fact-grounded documents with automated verification: a Python CLI plus Claude Code agents that build, tailor, verify and render .docx/PDF documents from one fact base."
 readme = "README.md"
 requires-python = ">=3.9"

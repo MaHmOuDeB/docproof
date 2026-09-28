@@ -1,7 +1,7 @@
 # Docproof for Claude Code
 
-The Claude Code half of Docproof: one skill, three agents and one slash command that write,
-audit and review a fact-grounded document. The reference use case is a CV tailored to a job ad.
+The Claude Code half of Docproof: one skill, three agents and two slash commands that write,
+audit and review fact-grounded documents (CVs, cover letters, LinkedIn profiles, bios, pitches). The reference use case is a CV tailored to a job ad.
 Everything here drives the `docproof` CLI, and every claim comes from one file: the user's
 **fact base**.
 
@@ -9,11 +9,12 @@ Everything here drives the `docproof` CLI, and every claim comes from one file: 
 
 | Path | Type | Does |
 |---|---|---|
-| `skills/doc-craft/` | Skill | The knowledge layer: how CVs are read, section-by-section rules, bullet writing, vocabulary, honest job-ad tailoring, layout/ATS rules, English and German conventions, eight review modes, and the CLI pipeline (`references/pipeline.md`). |
-| `agents/document-tailor.md` | Agent (author) | Go/no-go, evidence map (`docproof match`), section-by-section edits through the CLI, then the gates: `docproof verify`, `docproof check`, and a look at the rendered PNGs. Cover letter only on request. |
+| `skills/doc-craft/` | Skill | The knowledge layer: how CVs are read, section-by-section rules, bullet writing, vocabulary, honest job-ad tailoring, layout/ATS rules, English and German conventions, eight review modes, requirement coverage and ATS, cover letters, LinkedIn/bio/pitch writing, and the CLI pipeline (`references/pipeline.md`). |
+| `agents/document-tailor.md` | Agent (author) | Go/no-go, evidence map (`docproof match`), section-by-section edits through the CLI, then the gates: `docproof verify`, `docproof story`, `docproof check`, `docproof coverage` before → after, and a look at the rendered PNGs. Cover letter only on request. |
 | `agents/claim-auditor.md` | Agent (auditor) | Reads the finished document and the fact base, runs `docproof verify`, then judges what the script can't (ownership inflation, implied tools, misleading phrasing). Returns claim → source line → verdict → fix. Never edits. |
 | `agents/fresh-eyes-reviewer.md` | Agent (reviewer) | Reviews the document as a named persona with no access to the fact base or memory. Score, top 5 fixes, what to cut. Run 2–3 personas in parallel. |
 | `commands/tailor.md` | Slash command | `/tailor <job ad>`: author → auditor → one reviewer, then triage and a short summary. |
+| `commands/letter.md` | Slash command | `/letter [kind] <job ad>`: cover letter, application email, LinkedIn headline/About, bio or pitch, checked with `docproof prose`, critiqued once, revised. |
 
 ## How they hand off
 

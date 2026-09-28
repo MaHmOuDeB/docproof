@@ -33,9 +33,10 @@ docproof verify <document.docx> --facts <fact-base.md>
 
 Record every flag: untraced numbers, Known-gaps hits, skills-row WARNs. Each one becomes a row.
 The script does NOT check tool names inside bullets — list every tool, platform and method named
-anywhere in the document and find each one in the fact base yourself. If the document isn't a
-.docx, do the whole step by hand: list every number and tool name and search the
-fact base for each.
+anywhere in the document and find each one in the fact base yourself. For a letter, About section,
+bio or pitch (`.md`, `.txt` or `.docx`), run `docproof prose <file> --kind <letter|email|about|bio|pitch>
+--facts <fact-base.md>` instead: it traces every figure and known gap the same way. For a PDF, list
+every number and tool name by hand and search the fact base for each.
 
 ## Step 2: the judgment calls the script can't make
 

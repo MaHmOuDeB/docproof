@@ -143,6 +143,7 @@ docproof verify applications/<company>/<First_Last>_CV.docx --facts <fact base>
 docproof story  applications/<company>/<First_Last>_CV.docx --ad applications/<company>/job-ad.txt --facts <fact base>
 docproof check  applications/<company>/<First_Last>_CV.docx --orig <base.docx> --png applications/<company>/png
 # check also writes <First_Last>_CV.pdf next to the .docx
+docproof coverage applications/<company>/job-ad.txt --doc applications/<company>/<First_Last>_CV.docx --facts <fact base>
 ```
 
 - `verify`: zero untraced numbers, zero Known-gaps terms; every skills-row WARN checked by hand. Tools named in bullets aren't machine-checked — read each one against the fact base yourself. Fix the document, never the
@@ -150,6 +151,8 @@ docproof check  applications/<company>/<First_Last>_CV.docx --orig <base.docx> -
 - `story`: zero FAIL (title/summary identity). Each WARN (unproven title phrase, figure out of
   scope, sentence echoing the ad, bullet with no link to the ad) fixed, or kept with a one-line reason.
 - `check`: zero FAIL. Every WARN fixed or explained in the delivery.
+- `coverage` (`requirement-coverage.md`): run it on the base document before editing and on the result.
+  Every **closable** requirement is closed or consciously left out (say why); **open** ones stay open.
 - **Open and look at every PNG.** Check short sections aren't split, entries with ≤4 bullets
   aren't split, no one-word widows, no stranded lines, no cramped page. Fix by tightening
   wording, never by shrinking type. Re-run the gates after any fix.
@@ -157,9 +160,9 @@ docproof check  applications/<company>/<First_Last>_CV.docx --orig <base.docx> -
 ## 8. Cover letter: only when asked
 
 Don't write one by default. If the posting makes it mandatory, ask first. Follow
-`review-modes.md` Mode 8: draft → recruiter critique → revise → AI-phrase pass. Every number in
-it comes from the fact base. Produce the <200-word variant when the channel is an email body,
-message or character-limited field.
+`cover-letters.md`: two requirement → evidence → benefit chains, draft → `docproof prose
+--kind letter --facts … --ad …` → recruiter critique → revise → `prose` again. Every number in it
+comes from the fact base. Use `--kind email` for an email body or a character-limited field.
 
 ## 9. Deliver
 
@@ -167,10 +170,11 @@ Keep the chat output tight:
 1. **Verdict**: go / long shot, coverage %, hard-filter notes (2–4 lines).
 2. **Fresh-eyes score** before → after the triaged fixes (e.g. 6 → 7/10), with the fixes you
    rejected and why.
-3. **Match estimate** before → after (a recruiter estimate, not a vendor ATS score; say so).
+3. **Coverage** before → after, with the reachable ceiling (`docproof coverage`), plus your
+   recruiter estimate of the match; neither is a vendor ATS score, say so.
 4. **Change log by section**: one line each on what changed and why.
 5. **Gaps left open** and how to handle each (interview, or letter if asked).
-6. **Files**: CV .docx and .pdf paths (+ letter if asked); `verify`, `story` and `check` results; "PNGs
+6. **Files**: CV .docx and .pdf paths (+ letter if asked); `verify`, `story`, `check` (and `prose`) results; "PNGs
    reviewed" with anything notable.
 7. **Three questions this CV will invite** in an interview.
 8. **Next step**: recommend running the `claim-auditor` agent on the result (the `/tailor`

@@ -21,6 +21,7 @@ copy claude/agents/document-tailor.md    "$DEST/agents/document-tailor.md"
 copy claude/agents/claim-auditor.md      "$DEST/agents/claim-auditor.md"
 copy claude/agents/fresh-eyes-reviewer.md "$DEST/agents/fresh-eyes-reviewer.md"
 copy claude/commands/tailor.md           "$DEST/commands/tailor.md"
+copy claude/commands/letter.md           "$DEST/commands/letter.md"
 if ! command -v docproof >/dev/null 2>&1; then
   echo; echo "Next: install the CLI with  pip install -e .  (from this folder)"
 fi

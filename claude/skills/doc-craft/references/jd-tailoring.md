@@ -178,4 +178,5 @@ ones, and the rest are judgement.
 - [ ] Reads as a case for this job, not a list of everything
 - [ ] Title line fitted to this job; ~1–1.5 pages; Interests dropped unless they add signal
 - [ ] `docproof story --ad` has no FAIL, and every WARN is fixed or consciously kept
+- [ ] `docproof coverage` before → after reported; every closable requirement closed or consciously left out
 - [ ] `docproof check` passes and the PNGs were looked at
