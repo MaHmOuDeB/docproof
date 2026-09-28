@@ -1,4 +1,4 @@
-# docproof
+# Docproof
 
 **Fact-grounded documents with automated verification.** Keep every fact about yourself in one
 Markdown file, and let a Python CLI and a small team of Claude Code agents build, tailor,
@@ -8,12 +8,12 @@ base, and the layout is checked before anything leaves your machine.
 The reference use case is a CV tailored to a job ad, but the pipeline works for any document
 that must stay true to a source: bios, grant CVs, profiles, one-pagers.
 
-<p align="center"><img src="docs/sample-cv.png" width="560" alt="Sample CV rendered by docproof"></p>
+<p align="center"><img src="docs/sample-cv.png" width="560" alt="Sample CV rendered by Docproof"></p>
 
 ## Why
 
 LLMs are good at rewriting and bad at staying honest. Tailoring a document by hand for the 30th
-time is slow; letting a model do it drifts into claims you never made. docproof separates the two
+time is slow; letting a model do it drifts into claims you never made. Docproof separates the two
 jobs:
 
 - **A single fact base** (`profile/fact-base.md`) is the only source of truth, including a

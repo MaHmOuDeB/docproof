@@ -1,6 +1,6 @@
 # Architecture
 
-docproof has two layers: deterministic tools that can prove what they did, and agents that make
+Docproof has two layers: deterministic tools that can prove what they did, and agents that make
 judgment calls on top of them. Nothing an agent writes reaches the reader without passing the
 tools' gates.
 

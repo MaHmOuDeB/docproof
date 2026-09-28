@@ -1,4 +1,4 @@
-"""docproof — fact-grounded documents with automated verification.
+"""Docproof — fact-grounded documents with automated verification.
 
 Usage: docproof <command> [args]   (docproof <command> with no args prints its help)
 

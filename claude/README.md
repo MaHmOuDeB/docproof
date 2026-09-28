@@ -1,6 +1,6 @@
-# docproof for Claude Code
+# Docproof for Claude Code
 
-The Claude Code half of docproof: one skill, three agents and one slash command that write,
+The Claude Code half of Docproof: one skill, three agents and one slash command that write,
 audit and review a fact-grounded document. The reference use case is a CV tailored to a job ad.
 Everything here drives the `docproof` CLI, and every claim comes from one file: the user's
 **fact base**.
