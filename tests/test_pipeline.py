@@ -246,3 +246,67 @@ class TestRender(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+AD = EX / "jobs" / "experimentation-analyst.txt"
+
+
+class TestStory(unittest.TestCase):
+    """The one-story checks: each case reproduces a failure a recruiter caught in a real tailored CV."""
+
+    def edited(self, w, ops, name="s.docx"):
+        w.p("ops.json").write_text(json.dumps(ops))
+        dp("edit", w.cv, w.p("ops.json"), w.p(name))
+        return w.p(name)
+
+    def story(self, docx, *extra):
+        return json.loads(dp("story", docx, "--json", *extra, check=False).stdout)
+
+    def test_example_tells_one_story(self):
+        with Workdir() as w:
+            r = self.story(w.cv, "--ad", AD, "--facts", FACTS)
+            self.assertEqual(r["fail"], [])
+            self.assertFalse([f for f in r["warn"] if f["check"] in ("tagline", "scope", "echo")])
+
+    def test_title_and_summary_roles_must_agree(self):
+        with Workdir() as w:
+            bad = self.edited(w, [
+                {"op": "set_text", "zone": "title", "match": "Product Analyst", "text": "Business Analyst  |  KPI Modelling"},
+                {"op": "replace", "match": "Product analyst with three", "old": "Product analyst", "new": "Data analyst"},
+            ])
+            r = self.story(bad)
+            self.assertEqual([f["check"] for f in r["fail"]], ["identity"])
+            self.assertNotEqual(dp("story", bad, check=False).returncode, 0)
+            ok = self.edited(w, [
+                {"op": "set_text", "zone": "title", "match": "Product Analyst", "text": "Product & Growth Analyst  |  KPI Modelling"},
+                {"op": "replace", "match": "Product analyst with three", "old": "Product analyst", "new": "Growth analyst"},
+            ], "ok.docx")
+            self.assertEqual(self.story(ok)["fail"], [])          # same role, shorter qualifier: fine
+
+    def test_unproven_title_phrase(self):
+        with Workdir() as w:
+            bad = self.edited(w, [{"op": "set_text", "zone": "title", "match": "Product Analyst",
+                                   "text": "Product Analyst  |  Lifecycle Campaigns & KPI Modelling"}])
+            warns = [f for f in self.story(bad)["warn"] if f["check"] == "tagline"]
+            self.assertEqual(len(warns), 1)
+            self.assertIn("Lifecycle Campaigns", warns[0]["message"])
+
+    def test_figure_moved_out_of_scope(self):
+        with Workdir() as w:
+            bad = self.edited(w, [{"op": "replace", "match": "Product analyst with three",
+                                   "old": "built the dbt KPI layer 5 teams use as their single source of truth",
+                                   "new": "ran them across 5 teams"}])
+            warns = [f for f in self.story(bad)["warn"] if f["check"] == "scope"]
+            self.assertTrue(warns and "'5'" in warns[0]["message"])
+
+    def test_copied_ad_sentence_and_irrelevant_bullet(self):
+        with Workdir() as w:
+            bad = self.edited(w, [
+                {"op": "replace", "match": "Defined the event tracking plan", "old": "Defined the event tracking plan for the new onboarding flow with engineering",
+                 "new": "Partnered with engineering on event tracking and data quality for the new onboarding flow"},
+                {"op": "insert_after", "anchor": "Built a weekly Tableau", "like": "Built a weekly Tableau",
+                 "text": "Designed and calibrated a CNC milling machine in the workshop."},
+            ])
+            r = self.story(bad, "--ad", AD)
+            self.assertTrue(any(f["check"] == "echo" and "event tracking" in f["message"] for f in r["warn"]))
+            self.assertTrue(any(f["check"] == "relevance" and "CNC" in f["message"] for f in r["warn"]))

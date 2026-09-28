@@ -8,6 +8,7 @@ Return:
 1. Score 1–10 and one sentence why.
 2. The 6-second impression: what stands out, what you'd miss.
 3. Top 5 fixes, ranked by impact — each a concrete rewrite or cut, not advice.
-4. What you would cut entirely.
+4. What you would cut entirely, and any line that contradicts the title's role, copies the job ad's
+   wording, or proves nothing this role needs.
 5. The two questions you'd ask in a first interview.
 Be direct. Don't praise what is merely fine.

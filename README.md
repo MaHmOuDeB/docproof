@@ -33,7 +33,7 @@ Needs Python ≥ 3.9 and Google Chrome or Chromium (for PDF rendering). Poppler 
 git clone https://github.com/MaHmOuDeB/docproof && cd docproof
 pip install -e .                 # installs the `docproof` command (no runtime dependencies)
 docproof doctor                  # checks Chrome, poppler and fonts
-docproof demo                    # build → check → verify → match on the fictional example
+docproof demo                    # build → check → verify → story → match on the fictional example
 docproof init ~/career           # your own private workspace: profile/fact-base.md + resume.json
 ```
 
@@ -48,12 +48,13 @@ poppler, `pip install -e ".[pdf]"` gives a pypdf fallback for text checks (no PN
 | `docproof render doc.docx --out doc.pdf --png previews/` | Typeset a designed PDF (Inter, embedded) with headless Chrome |
 | `docproof check doc.docx [--orig base.docx] --png dir/` | Full gate: real .docx, protected header unchanged, every word in the PDF, page starts, widows, links, "tailored-for-the-ad" phrasing |
 | `docproof verify doc.docx --facts fact-base.md` | Every figure must appear in the fact base; no "known gap" may be claimed; skills rows are cross-checked |
+| `docproof story doc.docx --ad job-ad.txt --facts fact-base.md` | One story: the summary's role matches the title, every title phrase is proven in the body, repeated figures keep their scope, no line re-types the ad, every bullet serves the ad |
 | `docproof match job-ad.txt --facts fact-base.md` | Requirement → evidence map with a coverage score (≥70% genuine, 50–70% honest middle, <50% stretch) and the gaps |
 | `docproof dump / edit / keywords / reorder` | Safe edits: every change is proven to touch only its target |
 | `docproof add-entry / add-link / add-summary / set-metadata` | Structural additions that clone the document's own formatting |
 | `docproof lint paths… --rules rules.json` | Catch stale facts and rules in your own prompt/skill files |
 | `docproof prompt tailor\|audit\|review …` | Paste-ready prompt for ChatGPT, Gemini or any LLM, with all the context |
-| `docproof apply in.docx reply.json out.docx --facts …` | Apply an LLM's JSON answer safely, then verify it |
+| `docproof apply in.docx reply.json out.docx --facts … --ad …` | Apply an LLM's JSON answer safely, then run `story` and `verify` on it |
 | `docproof init [DIR]` | Create a private workspace with fact-base and résumé templates |
 
 Run any command without arguments for its help.
@@ -69,6 +70,24 @@ known gaps: 1 claimed
 skills    : 0 item(s) with words the fact base doesn't mention
 VERIFY FAILED
 ```
+
+### What `story` catches
+
+A document can pass every fact check and still read wrong. These are the mistakes a hiring manager
+notices in seconds, and the ones a model makes when it tailors line by line:
+
+```text
+$ docproof story tailored.docx --ad ad.txt --facts profile/fact-base.md
+FAIL identity  title says 'Product Analyst' but the summary opens with 'Data scientist'
+WARN tagline   title phrase 'Lifecycle Campaigns' is not shown anywhere in the body
+WARN scope     summary attaches '5' to 'ran them across', but in the body it belongs to: 'Built a SQL + dbt KPI layer …'
+WARN echo      'Analysed experiment results and wrote clear ship/no-ship recommendations' repeats the ad's own wording
+WARN relevance 'Built a churn-prediction model …' proves nothing the ad asks for
+```
+
+`echo` flags a line that re-types one of the ad's duties; with `--facts`, a line in the fact base's
+own wording is never flagged (matching the ad because you really did it is the point). Each WARN
+is either fixed or kept with a one-line reason; the agents also run a fresh-eyes review and re-score.
 
 ### What `match` shows
 
@@ -110,7 +129,7 @@ If the model invents a number or claims a known gap, `apply` fails the verificat
 | | Role |
 |---|---|
 | `doc-craft` skill | How CVs are read, section-by-section rules, bullet writing, honest tailoring, layout rules, English and German conventions, review modes |
-| `document-tailor` agent | Go/no-go with `match`, tailors section by section through the CLI, and cannot finish until `verify` and `check` pass and the PNGs have been looked at |
+| `document-tailor` agent | Go/no-go with `match`, tailors section by section through the CLI, and cannot finish until `verify`, `story` and `check` pass, the PNGs have been looked at and a fresh-eyes review has been applied and re-scored |
 | `claim-auditor` agent | Independent line-by-line claim audit against the fact base (numbers, tools, "led" vs "supported"); never edits |
 | `fresh-eyes-reviewer` agent | Reviews with **no** access to the fact base, as a named persona (recruiter, hiring manager…); run 2–3 in parallel |
 | `/tailor <job ad>` | Runs author → auditor → reviewer and triages the findings |
@@ -127,6 +146,8 @@ repository or in a private fork — `profile/` and `applications/` are git-ignor
 
 - Never invent experience: a fact that isn't in the fact base doesn't go in a document.
 - Trim words, never drop numbers.
+- One story: the title, the summary and every bullet sell the same role; a line that doesn't serve
+  the ad gives its space to one that does.
 - The reader wrote the job ad — the document never shows that it was tailored.
 - Emphasis budget: at most two bold items per bullet (one key phrase plus figures).
 - Short sections and entries with ≤ 4 bullets never split across pages; no one-word widows.

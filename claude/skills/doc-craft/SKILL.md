@@ -68,6 +68,7 @@ disagree, the more specific rule wins (a German-CV rule beats a general CV rule 
 | `docproof render <in.docx> --out <out.pdf> --png <dir>` | Designed PDF plus page images |
 | `docproof check <in.docx> [--orig base.docx] --png <dir>` | Layout and integrity gate |
 | `docproof verify <in.docx> --facts <fact-base.md>` | Claim tracing gate |
+| `docproof story <in.docx> [--ad <job-ad.txt>] [--facts <fact-base.md>]` | One-story gate: title ↔ summary, title phrases proven, figure scope, echo (fact-base wording is never flagged), relevance |
 | `docproof lint <paths…> --rules rules.json` | Stale-phrase linter for skill and agent files |
 | `docproof demo` | End-to-end run on the fictional example |
 

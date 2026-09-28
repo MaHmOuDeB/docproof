@@ -10,6 +10,7 @@ Build and render
 Verify against the facts
   verify       <doc.docx> --facts fact-base.md       every figure traces to the fact base; no known gap claimed
   match        <job-ad.txt> --facts fact-base.md     requirement → evidence map, coverage %, gaps
+  story        <doc.docx> [--ad ad] [--facts f]      one story: title ↔ summary, taglines, figure scope, echo, relevance
 
 Edit safely (every command proves that only the intended part changed)
   dump         <doc.docx> [--runs]                   list paragraphs — always dump before writing ops
@@ -24,7 +25,7 @@ Edit safely (every command proves that only the intended part changed)
 
 Use any AI assistant (ChatGPT, Gemini, Claude, …)
   prompt       tailor|audit|review --facts … --ad … --doc …   ready-to-paste prompt with all context
-  apply        <in.docx> <reply.json> <out.docx> [--facts f]  apply the model's JSON reply safely, then verify
+  apply        <in.docx> <reply.json> <out.docx> [--facts f] [--ad a]  apply the model's JSON reply, then story + verify
 
 Get started
   init         [DIR]                                 create profile/fact-base.md + resume.json templates
@@ -32,7 +33,7 @@ Get started
 Maintenance
   lint         <paths…> --rules rules.json          stale-phrase linter for your own skill files
   doctor                                            check Chrome, poppler and fonts
-  demo         [--out DIR]                          build → check → verify → match on the example
+  demo         [--out DIR]                          build → check → verify → story → match on the example
 """
 import importlib
 import os
@@ -48,6 +49,7 @@ COMMANDS = {
     "check": ("check", "run_cli", []),
     "verify": ("verify", "main", []),
     "match": ("match", "main", []),
+    "story": ("story", "main", []),
     "dump": ("edit", "run", ["dump"]),
     "edit": ("edit", "run", ["apply"]),
     "text": ("edit", "run", ["text"]),
@@ -115,6 +117,8 @@ def demo(argv):
         ("build", dp + ["build", str(ex / "resume.json"), str(docx)]),
         ("check", dp + ["check", str(docx), "--png", str(out)]),
         ("verify", dp + ["verify", str(docx), "--facts", str(ex / "profile" / "fact-base.md")]),
+        ("story", dp + ["story", str(docx), "--ad", str(ex / "jobs" / "experimentation-analyst.txt"),
+                   "--facts", str(ex / "profile" / "fact-base.md")]),
         ("match", dp + ["match", str(ex / "jobs" / "experimentation-analyst.txt"),
                         "--facts", str(ex / "profile" / "fact-base.md")]),
     ]

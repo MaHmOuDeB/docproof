@@ -25,7 +25,7 @@ Job ad: $ARGUMENTS
 3. **Audit.** Run the `claim-auditor` agent on the finished `.docx` it produced, with the same
    fact base. Don't pass it the author's notes or change log; it audits the document cold.
 
-4. **Review (optional, default on).** Unless `--no-review` was given, run one
+4. **Review (on by default; skip only with `--no-review`).** Run one
    `fresh-eyes-reviewer` with **only** the rendered PDF (or PNGs) and the ad. Persona: the value
    of `--persona`, else "hiring manager for <role title>"; for a German Lebenslauf, "German HR".
    Don't give it the fact base.
@@ -36,16 +36,18 @@ Job ad: $ARGUMENTS
    - Reviewer fixes: apply only those about clarity, order, emphasis or cutting that stay true
      to the fact base; turn any that need new facts into questions for the user.
    - If you change the document, do it through the `docproof` CLI per the doc-craft pipeline,
-     then re-run `docproof verify` and `docproof check` and look at the PNGs again.
+     then re-run `docproof verify`, `docproof story --ad` and `docproof check` and look at the PNGs again.
+   - When a reviewer's fix conflicts with approved wording in the fact base, the fact base wins.
+   - After applying fixes, ask the same reviewer to re-score once and report both scores.
    - Ask before applying reviewer suggestions that change structure (section order, cutting a
      whole entry).
 
 6. **Summarise** in chat, tight:
    - **Verdict**: go / long shot, coverage %, hard-filter notes
    - **Files**: CV .docx and .pdf paths
-   - **Gates**: `verify` result, `check` result, "PNGs reviewed"
+   - **Gates**: `verify`, `story` and `check` results, "PNGs reviewed"
    - **Audit**: N claims: B backed / O overstated / U unbacked, and what was fixed
-   - **Review**: persona, score, top 3 fixes and which were applied or rejected (and why)
+   - **Review**: persona, score before → after, top 3 fixes and which were applied or rejected (and why)
    - **Open gaps and questions** for the user
 
 ## Never

@@ -119,6 +119,41 @@ itself about job hunting (a scraper, a CV pipeline), describe the engineering (a
 fact base, automated verification), never "analysed job ads" or "tailored CVs".
 `docproof check` warns on this framing.
 
+## One story, every line earns its place
+
+A tailored CV can pass every fact check and still read wrong. These are the failures recruiters and
+hiring managers catch in seconds; `docproof story <cv.docx> --ad <job-ad.txt> --facts <fact base>` checks the mechanical
+ones, and the rest are judgement.
+
+- **Title and summary use the same identity.** The tailored title may name the target role; the
+  summary's opening noun matches it or is the neutral role noun alone ("Analyst"). Never a different
+  role ("Business Analyst" title over a "Data analyst" summary), never a bigger one than the facts
+  support (part-time work doesn't become a senior title). `story` fails on this.
+- **Every title phrase is proven below it.** "Lifecycle Campaigns" in the title needs a lifecycle
+  campaign in the body. A reader who finds none trusts the rest less. `story` warns.
+- **Figures keep their scope.** When a number moves into the summary it stays attached to the fact it
+  describes: if "5 teams" belongs to the KPI-layer bullet, the summary can't put it on the experiments.
+  `story` warns.
+- **Name the concrete thing, don't echo the ad.** Mirror single key terms once; never re-type the
+  ad's sentence ("Analysed experiment results and wrote clear recommendations" under an ad asking to
+  "analyse experiment results and write clear recommendations" reads as keyword stuffing). `story` warns.
+- **Each line proves a requirement of THIS ad.** Write one sentence per section on how it serves the
+  story; cut what serves nothing, even if it's true and impressive elsewhere (modelling detail for a
+  reporting role, an unrelated internship, tools the ad never mentions). `story` warns on
+  bullets that share nothing with the ad.
+- **Pick the fact that fits the reader.** Two true facts about the same job: choose the one this ad
+  values (people-side facts for people-facing roles), using the fact base's `## Bullet variants`.
+- **Reframe true facts into the ad's domain** without adding anything: subscriber analytics is
+  "customer data" for a retail ad; a managed service named by its product is also named with its
+  platform when the ad asks for that platform.
+- **Order by proof.** The project that proves a basic requirement goes first; lift Projects above
+  Education when they're core evidence. If a whole entry jumps to page two and leaves a gap, reorder
+  blocks before trimming words.
+- **Fresh eyes before delivery.** A reviewer who sees only the ad and the document (the
+  `fresh-eyes-reviewer` agent as the hiring manager) catches what the author can't. Triage its fixes
+  against the fact base: when a reviewer's suggestion conflicts with an approved wording in the fact
+  base, the fact base wins.
+
 ## Final tailoring checklist
 
 **Keywords and language**
@@ -142,4 +177,5 @@ fact base, automated verification), never "analysed job ads" or "tailored CVs".
 - [ ] Verbs vary; no three identical openers
 - [ ] Reads as a case for this job, not a list of everything
 - [ ] Title line fitted to this job; ~1–1.5 pages; Interests dropped unless they add signal
+- [ ] `docproof story --ad` has no FAIL, and every WARN is fixed or consciously kept
 - [ ] `docproof check` passes and the PNGs were looked at

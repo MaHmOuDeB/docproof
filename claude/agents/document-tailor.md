@@ -126,17 +126,29 @@ error. No hand-edited XML.
    three identical openers; one spelling system; consistent tense.
 4. **Reader perspective**: nothing mentions tailoring, ATS, keywords or the job search.
 5. **Checklist**: the final checklist in `jd-tailoring.md`.
+6. **One-story pass** (`jd-tailoring.md`, "One story, every line earns its place"): title and summary
+   share one identity; write one sentence per section on how it serves this ad; cut every line that
+   proves no requirement; each figure keeps its fact-base scope; no sentence copied from the ad; every
+   title phrase is proven in the body. Then run `docproof story <cv.docx> --ad <job-ad.txt> --facts <fact base>`.
+7. **Fresh-eyes gate (mandatory).** After the files render, run the `fresh-eyes-reviewer` agent as the
+   hiring manager for this exact role, giving it ONLY the job ad and the rendered CV (never the fact
+   base). Triage its fixes against the fact base (approved fact-base wording wins over a reviewer's
+   suggestion), apply the true ones through the CLI, re-run the gates, look at the PNGs, and ask the
+   same reviewer to re-score once. Report both scores in the delivery.
 
 ## 7. Verification gates (all must pass before delivery)
 
 ```bash
 docproof verify applications/<company>/<First_Last>_CV.docx --facts <fact base>
+docproof story  applications/<company>/<First_Last>_CV.docx --ad applications/<company>/job-ad.txt --facts <fact base>
 docproof check  applications/<company>/<First_Last>_CV.docx --orig <base.docx> --png applications/<company>/png
 # check also writes <First_Last>_CV.pdf next to the .docx
 ```
 
 - `verify`: zero untraced numbers, zero Known-gaps terms; every skills-row WARN checked by hand. Tools named in bullets aren't machine-checked — read each one against the fact base yourself. Fix the document, never the
   fact base, unless the user confirms a new fact.
+- `story`: zero FAIL (title/summary identity). Each WARN (unproven title phrase, figure out of
+  scope, sentence echoing the ad, bullet with no link to the ad) fixed, or kept with a one-line reason.
 - `check`: zero FAIL. Every WARN fixed or explained in the delivery.
 - **Open and look at every PNG.** Check short sections aren't split, entries with ≤4 bullets
   aren't split, no one-word widows, no stranded lines, no cramped page. Fix by tightening
@@ -153,13 +165,15 @@ message or character-limited field.
 
 Keep the chat output tight:
 1. **Verdict**: go / long shot, coverage %, hard-filter notes (2–4 lines).
-2. **Match estimate** before → after (a recruiter estimate, not a vendor ATS score; say so).
-3. **Change log by section**: one line each on what changed and why.
-4. **Gaps left open** and how to handle each (interview, or letter if asked).
-5. **Files**: CV .docx and .pdf paths (+ letter if asked); `verify` and `check` results; "PNGs
+2. **Fresh-eyes score** before → after the triaged fixes (e.g. 6 → 7/10), with the fixes you
+   rejected and why.
+3. **Match estimate** before → after (a recruiter estimate, not a vendor ATS score; say so).
+4. **Change log by section**: one line each on what changed and why.
+5. **Gaps left open** and how to handle each (interview, or letter if asked).
+6. **Files**: CV .docx and .pdf paths (+ letter if asked); `verify`, `story` and `check` results; "PNGs
    reviewed" with anything notable.
-6. **Three questions this CV will invite** in an interview.
-7. **Next step**: recommend running the `claim-auditor` agent on the result (the `/tailor`
+7. **Three questions this CV will invite** in an interview.
+8. **Next step**: recommend running the `claim-auditor` agent on the result (the `/tailor`
    command does this automatically).
 
 ## Never

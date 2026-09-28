@@ -10,6 +10,10 @@ Hard rules
 5. Mirror the ad's exact wording only where it is true, and only once, in a high-weight position.
 6. Emphasis: at most one bolded key phrase per bullet (the skill or output, not filler).
 7. Keep the header except the title line. You may change the title line ("zone": "title").
+8. One story: the summary's opening role noun must match the title line's role (or be the bare role
+   noun); every phrase in the title must be proven by a bullet; a number keeps the meaning it has in
+   the FACT BASE when you repeat it in the summary; never copy a sentence from the job ad; cut or
+   replace bullets that prove nothing the ad asks for (use "## Bullet variants" from the FACT BASE).
 
 Inputs
 === FACT BASE ===

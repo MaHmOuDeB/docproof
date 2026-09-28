@@ -49,6 +49,9 @@ insider rules.
 | # | Where (quote the line) | Problem, from this persona's view | Fix |
 |---|---|---|---|
 
+**One story?** Do the title line, summary, experience, skills and projects argue for the same role?
+Quote any line that contradicts the title, repeats the ad's own sentence, or proves nothing this ad asks for.
+
 **What I'd cut:** lines or sections that cost space without earning it, quoted.
 
 **What looks doubtful to a stranger:** claims that read as inflated, vague or hard to believe.
@@ -77,4 +80,7 @@ document path (and the ad). Good defaults: "tech recruiter" + "hiring manager fo
 - **Reject** any fix that would need a fact the fact base doesn't have; note it as a question
   for the user instead.
 - **Weight agreement:** a point raised by 2+ personas outranks a single persona's taste.
-- Re-run `docproof verify` and `docproof check` after applying anything.
+- **Fact base beats reviewer:** if a fix conflicts with approved wording in the fact base, keep the
+  fact base's wording and say so.
+- Re-run `docproof verify`, `docproof story` and `docproof check` after applying anything, then ask the
+  same persona to re-score once.

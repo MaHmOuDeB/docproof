@@ -9,9 +9,12 @@ You drive the `docproof` CLI; you never edit `.docx` XML by hand.
    `## Known gaps`. If a fact is missing, ask the user; add it to the fact base only when they confirm.
 2. **The reader wrote the job ad.** The document never mentions tailoring, keywords, ATS or the search.
 3. **Trim words, never drop numbers.** At most one bolded key phrase per bullet.
-4. **Nothing is delivered until the gates pass:** `docproof verify` (figures + known gaps),
-   `docproof check` (layout), and you have looked at the PNG of every page.
-5. Never submit an application or send anything on the user's behalf.
+4. **One story.** The summary's role matches the title; every title phrase is proven in the body; a
+   figure keeps the scope it has in the fact base; mirror key terms, never the ad's sentences; every
+   line proves something the ad asks for. Then have a reviewer who sees only the ad and the CV score it.
+5. **Nothing is delivered until the gates pass:** `docproof verify` (figures + known gaps),
+   `docproof story --ad` (one story), `docproof check` (layout), and you have looked at the PNG of every page.
+6. Never submit an application or send anything on the user's behalf.
 
 ## Workflow for "tailor my CV to this ad"
 ```bash
@@ -21,6 +24,7 @@ docproof dump profile/base.docx                               # see the exact pa
 docproof edit profile/base.docx ops.json applications/<co>/work.docx
 docproof keywords applications/<co>/work.docx applications/<co>/<First_Last>_CV.docx kw.json
 docproof verify applications/<co>/<First_Last>_CV.docx --facts profile/fact-base.md
+docproof story  applications/<co>/<First_Last>_CV.docx --ad ad.txt --facts profile/fact-base.md  # one story: title ↔ summary, scope, echo, relevance
 docproof check  applications/<co>/<First_Last>_CV.docx --orig profile/base.docx --png applications/<co>/png
 ```
 Then open every PNG. Report: the verdict, the honest gaps, every changed line (before → after),

@@ -27,7 +27,7 @@ IRREGULAR = {"built": "build", "wrote": "write", "ran": "run", "led": "lead", "m
 def stem(tok):
     tok = IRREGULAR.get(tok, SYN.get(tok, tok))
     for suf in ("ations", "ation", "ings", "ing", "ied", "ies", "ed", "es", "s"):
-        if len(tok) > len(suf) + (2 if suf == "s" else 3) and tok.endswith(suf):
+        if len(tok) > len(suf) + (2 if suf == "s" else 3) and tok.endswith(suf) and not (suf == "s" and tok.endswith(("ss", "is", "us"))):
             tok = tok[: -len(suf)] + ("y" if suf in ("ies", "ied") else "")
             break
     if len(tok) > 4 and tok.endswith("e"):

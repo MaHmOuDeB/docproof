@@ -8,9 +8,10 @@ The prompt bundles the fact base, the job ad, the `match` report and the documen
 house rules, and asks the model for a machine-readable answer. For `tailor`, save the model's JSON
 reply and apply it safely with:
 
-  docproof apply base.docx reply.json tailored.docx --facts fact-base.md
+  docproof apply base.docx reply.json tailored.docx --facts fact-base.md --ad job-ad.txt
 
-which runs the edits, bolds the keywords and verifies every figure against the fact base.
+which runs the edits, bolds the keywords, checks the story (title ↔ summary, scope, echo, relevance)
+and verifies every figure against the fact base.
 The model proposes; the tools check.
 """
 import io
@@ -88,10 +89,10 @@ def main(argv=None):
 
 
 def apply_main(argv=None):
-    """docproof apply <in.docx> <reply.json> <out.docx> [--facts fact-base.md]"""
+    """docproof apply <in.docx> <reply.json> <out.docx> [--facts fact-base.md] [--ad job-ad.txt]"""
     a = list(sys.argv[1:] if argv is None else argv)
     if len(a) < 3 or not (a[0].endswith(".docx") and a[1].endswith(".json") and a[2].endswith(".docx")):
-        sys.exit("usage: docproof apply <in.docx> <reply.json> <out.docx> [--facts fact-base.md]\n\n"
+        sys.exit("usage: docproof apply <in.docx> <reply.json> <out.docx> [--facts fact-base.md] [--ad job-ad.txt]\n\n"
                  "Applies an LLM's tailoring reply (from `docproof prompt tailor`): edits, then keyword bold,\n"
                  "then — with --facts — verifies every figure against the fact base.")
     src, reply_path, out = a[:3]
@@ -121,7 +122,22 @@ def apply_main(argv=None):
             print(f"Wrote {out}")
     for n in reply.get("notes", []):
         print("note:", n)
+    failed = False
+    if "--ad" in a:
+        from docproof.story import main as story_main
+
+        try:
+            facts = ["--facts", a[a.index("--facts") + 1]] if "--facts" in a else []
+            story_main([out, "--ad", a[a.index("--ad") + 1]] + facts)
+        except SystemExit as e:
+            failed = bool(e.code)
     if "--facts" in a:
         from docproof.verify import main as verify_main
-        verify_main([out, "--facts", a[a.index("--facts") + 1]])
+
+        try:
+            verify_main([out, "--facts", a[a.index("--facts") + 1]])
+        except SystemExit as e:
+            failed = failed or bool(e.code)
     print(f"Next: docproof check {out} --orig {src} --png <dir>   (then look at the pages)")
+    if failed:
+        sys.exit(1)

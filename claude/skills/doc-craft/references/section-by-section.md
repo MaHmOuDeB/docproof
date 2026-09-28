@@ -21,6 +21,11 @@ Reorder with `docproof reorder <in> <out> sections "A,B,…"`, never by hand.
 
 ---
 
+
+**Identity noun (tailored documents).** The summary's first noun matches the title line's role, or is
+the neutral role noun alone. Never a different role than the title, and never a bigger one than the
+fact base supports (tenure, part-time status, seniority). `docproof story` checks this.
+
 ## 1. Header
 
 **Contains:** full name · target title line · city, country · phone · email · LinkedIn ·

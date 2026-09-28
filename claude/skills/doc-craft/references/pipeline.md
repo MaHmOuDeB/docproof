@@ -46,6 +46,7 @@ docproof keywords $A/work-2.docx $A/Jordan_Rivera_CV.docx $A/kw.json  # {"<bulle
 
 # 4. Gates
 docproof verify $A/Jordan_Rivera_CV.docx --facts $F
+docproof story  $A/Jordan_Rivera_CV.docx --ad $A/job-ad.txt --facts $F
 docproof check  $A/Jordan_Rivera_CV.docx --orig profile/base.docx --png $A/png   # also writes the PDF next to the .docx
 ```
 
@@ -65,6 +66,7 @@ fonts work.
 | Gate | Passes when | On failure |
 |---|---|---|
 | `docproof verify` | every number in the document appears in the fact base and no `## Known gaps` term appears (hard fail); skills-row items not backed by the fact base are WARNs. Tools named inside bullets are not machine-checked — that is the claim-auditor's job | remove or reword the claim; never add the claim to the fact base to make it pass unless the user confirms it's true |
+| `docproof story --ad` | the summary's role matches the title (hard fail); title phrases proven in the body, figures in the summary keep their body scope, no duty re-typed from the ad (lines in the fact base's own wording are exempt with `--facts`), every bullet linked to the ad (WARNs) | fix, or keep a WARN with a one-line reason in the delivery |
 | `docproof check` | real .docx; header identical to `--orig` (title line excepted); every word in the PDF; page starts at a heading; no one-word widows; every link listed (open them yourself); no job-search framing | fix every FAIL; fix each WARN or state in the delivery why it's acceptable |
 | PNGs looked at | you opened each page image and found nothing wrong | fix, re-run both gates |
 
