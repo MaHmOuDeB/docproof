@@ -7,7 +7,7 @@ tools' gates.
 ```mermaid
 flowchart LR
     FB[(fact-base.md<br/>single source of truth)]
-    AD[job ad / target]
+    AD[brief / target]
     subgraph Agents [Claude Code agents]
         T[document-tailor<br/>author]
         A[claim-auditor<br/>truth]
@@ -19,7 +19,7 @@ flowchart LR
         V[verify + story<br/>figures, known gaps, one story]
         C[check + render<br/>PDF, pages, widows, links]
         CV[coverage<br/>shown / closable / open]
-        P[prose<br/>letters, About, bios, pitches]
+        P[prose<br/>free-text companions]
     end
     AD --> M
     FB --> M
@@ -27,7 +27,7 @@ flowchart LR
     T --> E --> V --> C --> CV
     FB --> V
     FB --> P
-    T -->|letter / About, when asked| P
+    T -->|free text, when asked| P
     C -->|PDF + PNGs| A
     C -->|PDF only| R
     FB --> A
@@ -44,20 +44,20 @@ flowchart LR
 | Header | `header-diff` | anything in the protected header changed except the title line |
 | Every edit | `edit`, `keywords`, `reorder`, `add-*` | the change touches more than its target (each tool diffs before/after) |
 | Truth | `verify` | a figure isn't in the fact base, or a known gap is claimed |
-| One story | `story` | the summary's role contradicts the title (FAIL); unproven title phrases, figures out of scope, lines echoing the ad, bullets that serve nothing (WARN) |
+| One story | `story` | the summary's role contradicts the title (FAIL); unproven title phrases, figures out of scope, lines echoing the brief, bullets that serve nothing (WARN) |
 | Coverage | `coverage` | reports; never fails: requirements shown, closable from the fact base, or open |
-| Prose | `prose` | a letter/About/bio/pitch has a figure not in the fact base, claims a known gap or exceeds a platform limit (FAIL); stock phrases, "not X but Y", echo, weak fit (WARN) |
+| Prose | `prose` | a free-text companion has a figure not in the fact base, claims a known gap or exceeds a length limit (FAIL); stock phrases, "not X but Y", echo, weak fit (WARN) |
 | Rendering | `render` | a word of the .docx is missing from the PDF text |
-| Layout | `check` | a page starts mid-entry, a bullet ends on one word, "tailored" phrasing appears (WARN) |
+| Layout | `check` | a page starts mid-entry, a bullet ends on one word, phrasing that points at the brief appears (WARN) |
 | Eyes | the agent | nobody looked at the PNGs |
 
 ## Without Claude Code
 
-The same loop works with any assistant: `docproof prompt tailor` packs the fact base, the ad, the
+The same loop works with any assistant: `docproof prompt tailor` packs the fact base, the brief, the
 `match` report and the document into one prompt that asks for a JSON list of edit operations;
 `docproof apply` runs them through the same safe editors and then `verify`. `prompt audit` and
 `prompt review` recreate the auditor and the fresh-eyes reviewer as paste-ready prompts, and
-`prompt write` drafts a cover letter, About section, bio or pitch for `prose` to check. Coding
+`prompt write` drafts free text for `prose` to check. Coding
 agents (Codex CLI, Gemini CLI, Cursor) get their instructions from `AGENTS.md`.
 
 ## Why the agents are separate
@@ -65,7 +65,7 @@ agents (Codex CLI, Gemini CLI, Cursor) get their instructions from `AGENTS.md`.
 - The **author** is optimising for fit, which is exactly the pressure that produces overclaiming.
 - The **auditor** sees the fact base and only asks "is this true as written?" It never edits.
 - The **reviewer** is deliberately denied the fact base and any memory, so it reads the document
-  the way a recruiter does. Two or three personas in parallel disagree usefully.
+  the way a first-time reader does. Two or three personas in parallel disagree usefully.
 
 The orchestrator (you, or `/tailor`) triages the auditor's and reviewers' findings against the
 fact base, applies only the true fixes through the CLI, and re-runs the gates.
